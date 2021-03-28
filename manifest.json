@@ -1,9 +1,9 @@
 {
-  "id": "python-lab-obsidian",
-  "name": "Obsidian Python lab",
+  "id": "obsidian-scripts-lab",
+  "name": "Obsidian scripts lab",
   "version": "0.1.0",
   "minAppVersion": "0.11.6",
-  "description": "Experimenting in obsidian using python",
+  "description": "An interface to experiment with various scripts",
   "author": "Cristian Vasquez",
   "isDesktopOnly": false
 }

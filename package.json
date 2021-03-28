@@ -1,7 +1,7 @@
 {
-  "name": "python-lab-obsidian",
+  "name": "obsidian-scripts-lab",
   "version": "0.1.0",
-  "description": "Obsidian python lab",
+  "description": "Obsidian scripts lab",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
