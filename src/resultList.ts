@@ -1,13 +1,7 @@
 import {
-  addIcon,
-  App,
   ItemView,
   Menu,
   Notice,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  TAbstractFile,
   TFile,
   WorkspaceLeaf,
 } from 'obsidian';
@@ -46,7 +40,10 @@ class ResultListView extends ItemView {
   public getIcon(): string {
     return 'lab';
   }
-
+  
+  /**
+   * The menu that appears with right click on the icon 
+   */
   public onHeaderMenu(menu: Menu): void {
     menu
       .addItem((item) => {
@@ -72,6 +69,10 @@ class ResultListView extends ItemView {
     super.load();
 
     const handleOpenFile = async (openedFile: TFile): Promise<void> => {
+
+      if (this.experiment.implementation){
+          console.log('With implementation')
+      }
       if (!openedFile) {
         return;
       }

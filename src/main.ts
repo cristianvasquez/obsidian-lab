@@ -13,52 +13,67 @@ import {
 } from 'obsidian';
 
 import { ResultListView } from './resultList';
-
+import { pythonImplementation } from './python';
 /**
  * The plugin itself
  */
-
-const DEFAULT_CONFIG: LabConfig = {
+const DEFAULT_SETTINGS: LabSettings = {
   experiments: [
     {
-      name: 'Dummy experiment 1',
-      autoCall: false,
+      name: 'Similarity, random',
+      type: 'python-result-list',
       position: 'leaf-right',
+      invokeOnFocus: false,
     },
     {
-      name: 'Dummy experiment 2',
-      autoCall: false,
+      name: 'Similarity, IDF',
+      type: 'python-result-list',
       position: 'leaf-right',
-    },
-    {
-      name: 'Dummy experiment 3',
-      autoCall: false,
-      position: 'leaf-right',
+      invokeOnFocus: false,
     },
   ],
 };
 
 export default class PythonLabPlugin extends Plugin {
-  public data: LabConfig;
+  public settings: LabSettings;
   public view: ResultListView;
 
   public async onload(): Promise<void> {
     console.log('loading python lab plugin');
 
-    await this.loadData();
+    await this.loadSettings();
 
     addIcon('sweep', sweepIcon);
     addIcon('lab', labIcon);
 
-    this.data.experiments.forEach((experiment: Experiment, index: number) => {
-      let experimentId: string = `experiment_tab_${index}`;
+    /**
+     * Register all experiments
+     */
+    this.settings.experiments.forEach(
+      (experiment: Experiment, index: number) => {
+        switch (experiment.type) {
+          case 'python-result-list': {
+            experiment.implementation = pythonImplementation;
+            break;
+          }
 
-      this.registerView(
-        experimentId,
-        (leaf) =>
-          (this.view = new ResultListView(leaf, experiment, experimentId)),
-      );
-    });
+          default: {
+            console.log(
+              `Experiment:[${experiment.name}] Type:[${experiment.type}] not implemented`,
+            );
+            break;
+          }
+        }
+
+        let experimentId: string = `experiment_tab_${index}`;
+
+        this.registerView(
+          experimentId,
+          (leaf) =>
+            (this.view = new ResultListView(leaf, experiment, experimentId)),
+        );
+      },
+    );
 
     if (this.app.workspace.layoutReady) {
       this.initView();
@@ -68,37 +83,46 @@ export default class PythonLabPlugin extends Plugin {
     this.addSettingTab(new PythonLabSettings(this.app, this));
   }
 
-  public async loadData(): Promise<void> {
-    this.data = Object.assign(DEFAULT_CONFIG, await super.loadData());
+  public async loadSettings(): Promise<void> {
+    this.settings = Object.assign(DEFAULT_SETTINGS, await super.loadData());
   }
 
-  private readonly initView = (): void => {
-    this.data.experiments.forEach((experiment: Experiment, index: number) => {
-      let experimentId: string = `experiment_tab_${index}`;
+  public async saveSettings() {
+    await this.saveData(this.settings);
+  }
 
-      if (!this.app.workspace.getLeavesOfType(experimentId).length) {
-        let viewState = {
-          type: experimentId,
-          active: true,
-        };
-        switch (experiment.position) {
-          case 'leaf-left': {
-            this.app.workspace.getLeftLeaf(false).setViewState(viewState);
-            break;
-          }
-          case 'leaf-right': {
-            this.app.workspace.getRightLeaf(false).setViewState(viewState);
-            break;
-          }
-          default: {
-            console.log(
-              `Experiment [${experiment.name}] [${experiment.position}] not implemented`,
-            );
-            break;
+  /**
+   * Init all experiments
+   */
+  private readonly initView = (): void => {
+    this.settings.experiments.forEach(
+      (experiment: Experiment, index: number) => {
+        let experimentId: string = `experiment_tab_${index}`;
+
+        if (!this.app.workspace.getLeavesOfType(experimentId).length) {
+          let viewState = {
+            type: experimentId,
+            active: true,
+          };
+          switch (experiment.position) {
+            case 'leaf-left': {
+              this.app.workspace.getLeftLeaf(false).setViewState(viewState);
+              break;
+            }
+            case 'leaf-right': {
+              this.app.workspace.getRightLeaf(false).setViewState(viewState);
+              break;
+            }
+            default: {
+              console.log(
+                `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
+              );
+              break;
+            }
           }
         }
-      }
-    });
+      },
+    );
   };
 }
 
@@ -118,11 +142,31 @@ class PythonLabSettings extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Python experiments' });
+    containerEl.createEl('h2', { text: 'Registered experiments' });
 
     const div = containerEl.createEl('div', {
       cls: 'python-lab-text',
     });
+
+    new Setting(containerEl)
+      .setName('Experiments')
+      .setDesc('config for each experiment')
+      .addTextArea((text) => {
+        text
+          .setPlaceholder(JSON.stringify(DEFAULT_SETTINGS, null, 2))
+          .setValue(JSON.stringify(this.plugin.settings, null, 2) || '')
+          .onChange(async (value) => {
+            try {
+              const newValue = JSON.parse(value);
+              this.plugin.settings = newValue;
+              await this.plugin.saveSettings();
+            } catch (e) {
+              return false;
+            }
+          });
+        text.inputEl.rows = 24;
+        text.inputEl.cols = 120;
+      });
 
     const footerText = document.createElement('p');
     footerText.appendText('Pull requests are both welcome and appreciated. :)');

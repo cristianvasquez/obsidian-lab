@@ -1,12 +1,14 @@
 
-interface LabConfig {
+interface LabSettings {
   experiments: Experiment[];
 }
 
 interface Experiment {
   name: string;
-  autoCall: boolean;
+  type: 'python-result-list';
   position: 'leaf-left' | 'leaf-right';
+  invokeOnFocus: boolean;
+  implementation?: object;
 }
 
 interface Item {

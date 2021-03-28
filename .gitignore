@@ -10,3 +10,5 @@ yarn-cache
 # build
 main.js
 *.js.map
+
+data.json
