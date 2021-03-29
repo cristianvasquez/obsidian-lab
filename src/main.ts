@@ -1,35 +1,24 @@
-import {
-  addIcon,
-  App,
-  ItemView,
-  Menu,
-  Notice,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  TAbstractFile,
-  TFile,
-  WorkspaceLeaf,
-} from 'obsidian';
-
+import { addIcon, App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { ResultListView } from './resultList';
-import { pythonImplementation } from './python';
-/**
- * The plugin itself
- */
+import path from 'path';
+
 const DEFAULT_SETTINGS: LabSettings = {
   experiments: [
     {
-      name: 'Similarity, random',
-      type: 'python-result-list',
+      name: 'Random score, javascript implementation',
+      type: 'result-list',
+      trigger: 'invoke-on-focus',
+      command:
+        'node /home/cvasquez/obsidian/development/.obsidian/plugins/obsidian-lab/examples/randomScore.js',
       position: 'leaf-right',
-      invokeOnFocus: false,
     },
     {
-      name: 'Similarity, IDF',
-      type: 'python-result-list',
+      name: 'Random score, python implementation',
+      type: 'result-list',
+      trigger: 'invoke-on-focus',
+      command:
+        'python /home/cvasquez/obsidian/development/.obsidian/plugins/obsidian-lab/examples/randomScore.py',
       position: 'leaf-right',
-      invokeOnFocus: false,
     },
   ],
 };
@@ -46,20 +35,41 @@ export default class PythonLabPlugin extends Plugin {
     addIcon('sweep', sweepIcon);
     addIcon('lab', labIcon);
 
-    /**
-     * Register all experiments
-     */
     this.settings.experiments.forEach(
       (experiment: Experiment, index: number) => {
         switch (experiment.type) {
-          case 'python-result-list': {
-            experiment.implementation = pythonImplementation;
+          case 'result-list': {
+            if (experiment.command) {
+              let invokeCommand: (
+                parameter: Parameter,
+              ) => Promise<Item[]> = function (parameter: Parameter) {
+                return new Promise<Item[]>((resolve, reject) => {
+                  const exec = require('child_process').exec;
+                  exec(
+                    experiment.command,
+                    (error: any, stdout: any, stderr: any) => {
+                      if (error) {
+                        console.error(error);
+                        resolve([]);
+                      } else {
+                        resolve(JSON.parse(stdout));
+                      }
+                    },
+                  );
+                });
+              };
+              experiment.implementation = invokeCommand;
+            } else {
+              console.error(
+                `Experiment:[${experiment.name}] command:[${experiment.command}]`,
+              );
+            }
             break;
           }
 
           default: {
-            console.log(
-              `Experiment:[${experiment.name}] Type:[${experiment.type}] not implemented`,
+            console.error(
+              `Experiment:[${experiment.name}] type:[${experiment.type}] not implemented`,
             );
             break;
           }

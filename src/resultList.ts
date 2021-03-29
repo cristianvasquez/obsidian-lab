@@ -1,14 +1,8 @@
-import {
-  ItemView,
-  Menu,
-  Notice,
-  TFile,
-  WorkspaceLeaf,
-} from 'obsidian';
+import { ItemView, Menu, Notice, TFile, WorkspaceLeaf } from 'obsidian';
 
 interface ResultListState {
   parameter?: Parameter;
-  response: Item[];
+  items: Item[];
 }
 
 class ResultListView extends ItemView {
@@ -22,7 +16,7 @@ class ResultListView extends ItemView {
     this.experiment = experiment;
 
     this.data = {
-      response: [],
+      items: [],
     };
 
     this.viewTypeId = viewTypeId;
@@ -40,9 +34,9 @@ class ResultListView extends ItemView {
   public getIcon(): string {
     return 'lab';
   }
-  
+
   /**
-   * The menu that appears with right click on the icon 
+   * The menu that appears with right click on the icon
    */
   public onHeaderMenu(menu: Menu): void {
     menu
@@ -51,7 +45,7 @@ class ResultListView extends ItemView {
           .setTitle('Clear list')
           .setIcon('sweep')
           .onClick(async () => {
-            this.data.response = [];
+            this.data.items = [];
             this.redraw(this.data);
           });
       })
@@ -68,28 +62,25 @@ class ResultListView extends ItemView {
   public load(): void {
     super.load();
 
-    const handleOpenFile = async (openedFile: TFile): Promise<void> => {
+    if (this.experiment.trigger == 'invoke-on-focus') {
+      const handleOpenFile = async (openedFile: TFile): Promise<void> => {
+        if (!openedFile) {
+          return;
+        }
+        this.data.parameter = {
+          label: openedFile.name,
+          path: openedFile.path,
+        };;
 
-      if (this.experiment.implementation){
-          console.log('With implementation')
-      }
-      if (!openedFile) {
-        return;
-      }
+        this.data.items = await this.experiment.implementation(
+          this.data.parameter,
+        );
 
-      this.data.response.unshift({
-        basename: openedFile.basename,
-        path: openedFile.path,
-      });
-
-      this.data.parameter = {
-        label: openedFile.path,
+        this.redraw(this.data);
       };
 
-      this.redraw(this.data);
-    };
-
-    this.registerEvent(this.app.workspace.on('file-open', handleOpenFile));
+      this.registerEvent(this.app.workspace.on('file-open', handleOpenFile));
+    }
   }
 
   /**
@@ -121,16 +112,14 @@ class ResultListView extends ItemView {
         leaf.openFile(targetFile);
       } else {
         new Notice(`'${file.path}' not found`);
-        this.data.response = this.data.response.filter(
-          (fp) => fp.path !== file.path,
-        );
+        this.data.items = this.data.items.filter((fp) => fp.path !== file.path);
         this.redraw(this.data);
       }
     };
 
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
-    data.response.forEach((currentFile) => {
+    data.items.forEach((currentFile) => {
       // The info that will appear on hover
       let jsonInfo = JSON.stringify(currentFile, null, 4);
 
@@ -146,7 +135,7 @@ class ResultListView extends ItemView {
 
       navFileTitle.createDiv({
         cls: 'nav-file-title-content',
-        text: currentFile.basename,
+        text: currentFile.name,
       });
 
       navFile.onClickEvent((event) =>

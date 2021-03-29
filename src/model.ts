@@ -3,22 +3,24 @@ interface LabSettings {
   experiments: Experiment[];
 }
 
+interface Parameter {
+  label: string; // Human readable indicator, for example 'pagerank'
+  path?: string; // The current note path
+  textSelection?: string; // What's currently selected
+}
+
 interface Experiment {
   name: string;
-  type: 'python-result-list';
+  type: 'result-list';
   position: 'leaf-left' | 'leaf-right';
-  invokeOnFocus: boolean;
-  implementation?: object;
+  trigger: 'invoke-on-focus' | 'command';
+  command?: string;
+  implementation?(parameter: Parameter): any;
 }
 
 interface Item {
   path: string;
-  basename: string;
+  name: string;
   info?: object;
 }
 
-interface Parameter {
-  label: string;
-  path?: string;
-  textSelection?: string;
-}
