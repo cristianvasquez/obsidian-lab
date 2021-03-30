@@ -1,4 +1,3 @@
-
 interface LabSettings {
   experiments: Experiment[];
 }
@@ -14,8 +13,9 @@ interface Experiment {
   type: 'result-list';
   position: 'leaf-left' | 'leaf-right';
   trigger: 'invoke-on-focus' | 'command';
+  debug: 'verbose' | 'off';
   command?: string;
-  implementation?(parameter: Parameter): any;
+  call?(parameter: Parameter): any;
 }
 
 interface Item {
@@ -23,4 +23,3 @@ interface Item {
   name: string;
   info?: object;
 }
-

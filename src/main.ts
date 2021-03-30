@@ -1,89 +1,192 @@
-import { addIcon, App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+  addIcon,
+  App,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  FileSystemAdapter,
+  Notice,
+  MarkdownView,
+} from 'obsidian';
 import { ResultListView } from './resultList';
-import path from 'path';
 
-const DEFAULT_SETTINGS: LabSettings = {
-  experiments: [
-    {
-      name: 'Random score, javascript implementation',
-      type: 'result-list',
-      trigger: 'invoke-on-focus',
-      command:
-        'node /home/cvasquez/obsidian/development/.obsidian/plugins/obsidian-lab/examples/randomScore.js',
-      position: 'leaf-right',
-    },
-    {
-      name: 'Random score, python implementation',
-      type: 'result-list',
-      trigger: 'invoke-on-focus',
-      command:
-        'python /home/cvasquez/obsidian/development/.obsidian/plugins/obsidian-lab/examples/randomScore.py',
-      position: 'leaf-right',
-    },
-  ],
+const getDefaultSettings = function (currentVaultPath: string): LabSettings {
+  return {
+    experiments: [
+      {
+        name: 'Random score, javascript implementation',
+        type: 'result-list',
+        trigger: 'invoke-on-focus',
+        command: `node ${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.js`,
+        position: 'leaf-right',
+        debug: 'verbose',
+      },
+      {
+        name: 'Random score, python implementation',
+        type: 'result-list',
+        trigger: 'invoke-on-focus',
+        command: `python ${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.py`,
+        position: 'leaf-right',
+        debug: 'verbose',
+      },
+    ],
+  };
 };
 
 export default class PythonLabPlugin extends Plugin {
   public settings: LabSettings;
   public view: ResultListView;
 
+  public getVaultPath(): string {
+    if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
+      throw new Error('app.vault is not a FileSystemAdapter instance');
+    }
+    return this.app.vault.adapter.getBasePath();
+  }
+
+
+
   public async onload(): Promise<void> {
     console.log('loading python lab plugin');
-
-    await this.loadSettings();
 
     addIcon('sweep', sweepIcon);
     addIcon('lab', labIcon);
 
-    this.settings.experiments.forEach(
-      (experiment: Experiment, index: number) => {
-        switch (experiment.type) {
-          case 'result-list': {
-            if (experiment.command) {
+    await this.loadSettings();
+
+    const buildCommand = (base: string, parameter: Parameter) => {
+       let vaultPath = this.getVaultPath();
+       let command = base;
+       command = `${command} --vault '${vaultPath}'`;
+
+       if (parameter.path) {
+         command = `${command} --path '${parameter.path}'`;
+       }
+       if (parameter.textSelection) {
+         command = `${command} --textSelection '${parameter.textSelection}'`;
+       }
+       return command;
+    }
+
+    if (this.settings && this.settings.experiments) {
+      this.settings.experiments.forEach(
+        (experiment: Experiment, index: number) => {
+          switch (experiment.type) {
+            case 'result-list': {
+
+            // Creates an invocator an experiment of type result-list
+            const buildCall = (experiment: Experiment) => {
               let invokeCommand: (
                 parameter: Parameter,
               ) => Promise<Item[]> = function (parameter: Parameter) {
+                // Building a command from the parameter object
+                let command = buildCommand(experiment.command, parameter);
+
+                // The function that executes the script
                 return new Promise<Item[]>((resolve, reject) => {
                   const exec = require('child_process').exec;
-                  exec(
-                    experiment.command,
-                    (error: any, stdout: any, stderr: any) => {
-                      if (error) {
-                        console.error(error);
-                        resolve([]);
-                      } else {
+
+                  
+                  if (experiment.debug == 'verbose') {
+                    console.log('executing', command);
+                  }
+
+                  exec(command, (error: any, stdout: any, stderr: any) => {
+                    if (error) {
+                      new Notice(
+                        `${experiment.name}: could not execute, see console`,
+                      );
+                      console.error(error);
+                      reject(error);
+                    } else {
+                      try {
                         resolve(JSON.parse(stdout));
+                      } catch (error) {
+                        new Notice(
+                          `${experiment.name}: could not parse result, see console`,
+                        );
+                        console.error(stdout);
+                        reject(error);
                       }
-                    },
-                  );
+                    }
+                  });
                 });
               };
-              experiment.implementation = invokeCommand;
-            } else {
-              console.error(
-                `Experiment:[${experiment.name}] command:[${experiment.command}]`,
-              );
+              return invokeCommand;
+            };
+
+              if (experiment.command) {
+                let call = buildCall(experiment);
+                let experimentId: string = `experiment_tab_${index}`;
+
+                this.registerView(experimentId, (leaf) => {
+                  let experimentView = new ResultListView(
+                    leaf,
+                    experiment,
+                    experimentId,
+                  );
+
+                  // The function that triggers each time 'command' is executed
+                  // Probably there many clean ways to gather this info
+                  const handleCall = async () => {
+                    let parameter: Parameter = {
+                      label: `${experiment.name}`,
+                    };
+                    const activeView = this.app.workspace.activeLeaf.view;
+                    if (activeView instanceof MarkdownView) {
+                      const editor = activeView.sourceMode.cmEditor;
+                      let textSelection = editor.getSelection();
+                      if (textSelection) {
+                        parameter.textSelection = textSelection;
+                      }
+                      if (activeView.file && activeView.file.path) {
+                        parameter.path = activeView.file.path;
+                      }
+                    }
+
+                    const items = await call(parameter);
+
+                    experimentView.setData({
+                      parameter: parameter,
+                      items: items,
+                    });
+
+                    experimentView.redraw();
+                  };
+
+                  this.addCommand({
+                    id: `python_lab_${index}`,
+                    name: experiment.name,
+                    callback: () => handleCall(),
+                    hotkeys: [],
+                  });
+
+                  return experimentView;
+                });
+
+                experiment.call = call;
+              } else {
+                const errorMessage = `Experiment:[${experiment.name}] command:[${experiment.command}]`;
+                new Notice(errorMessage);
+                console.error(errorMessage);
+              }
+
+              break;
             }
-            break;
+
+            default: {
+              const errorMessage = `Experiment:[${experiment.name}] type:[${experiment.type}] not implemented`;
+              new Notice(errorMessage);
+              console.error(errorMessage);
+
+              break;
+            }
           }
-
-          default: {
-            console.error(
-              `Experiment:[${experiment.name}] type:[${experiment.type}] not implemented`,
-            );
-            break;
-          }
-        }
-
-        let experimentId: string = `experiment_tab_${index}`;
-
-        this.registerView(
-          experimentId,
-          (leaf) =>
-            (this.view = new ResultListView(leaf, experiment, experimentId)),
-        );
-      },
-    );
+        },
+      );
+    } else {
+      console.log(`settings[${this.settings}]`);
+    }
 
     if (this.app.workspace.layoutReady) {
       this.initView();
@@ -94,7 +197,9 @@ export default class PythonLabPlugin extends Plugin {
   }
 
   public async loadSettings(): Promise<void> {
-    this.settings = Object.assign(DEFAULT_SETTINGS, await super.loadData());
+    console.log('load settings');
+    const defaultSettings = getDefaultSettings(this.getVaultPath());
+    this.settings = Object.assign(defaultSettings, await super.loadData());
   }
 
   public async saveSettings() {
@@ -105,34 +210,36 @@ export default class PythonLabPlugin extends Plugin {
    * Init all experiments
    */
   private readonly initView = (): void => {
-    this.settings.experiments.forEach(
-      (experiment: Experiment, index: number) => {
-        let experimentId: string = `experiment_tab_${index}`;
+    if (this.settings && this.settings.experiments) {
+      this.settings.experiments.forEach(
+        (experiment: Experiment, index: number) => {
+          let experimentId: string = `experiment_tab_${index}`;
 
-        if (!this.app.workspace.getLeavesOfType(experimentId).length) {
-          let viewState = {
-            type: experimentId,
-            active: true,
-          };
-          switch (experiment.position) {
-            case 'leaf-left': {
-              this.app.workspace.getLeftLeaf(false).setViewState(viewState);
-              break;
-            }
-            case 'leaf-right': {
-              this.app.workspace.getRightLeaf(false).setViewState(viewState);
-              break;
-            }
-            default: {
-              console.log(
-                `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
-              );
-              break;
+          if (!this.app.workspace.getLeavesOfType(experimentId).length) {
+            let viewState = {
+              type: experimentId,
+              active: true,
+            };
+            switch (experiment.position) {
+              case 'leaf-left': {
+                this.app.workspace.getLeftLeaf(false).setViewState(viewState);
+                break;
+              }
+              case 'leaf-right': {
+                this.app.workspace.getRightLeaf(false).setViewState(viewState);
+                break;
+              }
+              default: {
+                console.log(
+                  `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
+                );
+                break;
+              }
             }
           }
-        }
-      },
-    );
+        },
+      );
+    }
   };
 }
 
@@ -163,7 +270,13 @@ class PythonLabSettings extends PluginSettingTab {
       .setDesc('config for each experiment')
       .addTextArea((text) => {
         text
-          .setPlaceholder(JSON.stringify(DEFAULT_SETTINGS, null, 2))
+          .setPlaceholder(
+            JSON.stringify(
+              getDefaultSettings(this.plugin.getVaultPath()),
+              null,
+              2,
+            ),
+          )
           .setValue(JSON.stringify(this.plugin.settings, null, 2) || '')
           .onChange(async (value) => {
             try {
@@ -179,10 +292,9 @@ class PythonLabSettings extends PluginSettingTab {
       });
 
     const footerText = document.createElement('p');
+    footerText.appendText('Restart after making changes.<br/>');
     footerText.appendText('Pull requests are both welcome and appreciated. :)');
     div.appendChild(footerText);
-
-    const parser = new DOMParser();
   }
 }
 

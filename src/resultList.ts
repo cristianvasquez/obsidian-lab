@@ -1,4 +1,13 @@
-import { ItemView, Menu, Notice, TFile, WorkspaceLeaf } from 'obsidian';
+import {
+  ItemView,
+  Menu,
+  TFile,
+  WorkspaceLeaf,
+  FileSystemAdapter,
+  Notice,
+  MarkdownView,
+} from 'obsidian';
+var path = require('path');
 
 interface ResultListState {
   parameter?: Parameter;
@@ -15,12 +24,16 @@ class ResultListView extends ItemView {
 
     this.experiment = experiment;
 
-    this.data = {
+    this.setData({
       items: [],
-    };
+    });
 
     this.viewTypeId = viewTypeId;
-    this.redraw(this.data);
+    this.redraw();
+  }
+
+  public setData(data: ResultListState) {
+    this.data = data;
   }
 
   public getViewType(): string {
@@ -45,8 +58,10 @@ class ResultListView extends ItemView {
           .setTitle('Clear list')
           .setIcon('sweep')
           .onClick(async () => {
-            this.data.items = [];
-            this.redraw(this.data);
+            this.setData({
+              items: [],
+            });
+            this.redraw();
           });
       })
       .addItem((item) => {
@@ -70,13 +85,13 @@ class ResultListView extends ItemView {
         this.data.parameter = {
           label: openedFile.name,
           path: openedFile.path,
-        };;
+        };
 
-        this.data.items = await this.experiment.implementation(
+        this.data.items = await this.experiment.call(
           this.data.parameter,
         );
 
-        this.redraw(this.data);
+        this.redraw();
       };
 
       this.registerEvent(this.app.workspace.on('file-open', handleOpenFile));
@@ -87,22 +102,32 @@ class ResultListView extends ItemView {
    * Updates the panel
    */
 
-  public readonly redraw = (data: ResultListState): void => {
+  public readonly redraw = (): void => {
     const openFile = this.app.workspace.getActiveFile();
     const rootEl = createDiv({ cls: 'nav-folder mod-root' });
 
-    if (data.parameter) {
+    if (this.data.parameter) {
       const context = rootEl.createDiv({
         title: 'context',
         cls: 'nav-file python-lab-context',
-        text: data.parameter.label,
+        text: this.data.parameter.label,
       });
     }
 
     let clickElement = (file: Item, shouldSplit = false): void => {
+      let filePath = file.path;
+
+      // If it applies, remove the vault path
+      if (this.app.vault.adapter instanceof FileSystemAdapter) {
+        const vaultPath = this.app.vault.adapter.getBasePath();
+        if (filePath.startsWith(vaultPath)) {
+          filePath = path.relative(vaultPath, filePath);
+        }
+      }
+
       const targetFile = this.app.vault
         .getFiles()
-        .find((f) => f.path === file.path);
+        .find((f) => f.path === filePath);
 
       if (targetFile) {
         let leaf = this.app.workspace.getMostRecentLeaf();
@@ -113,13 +138,13 @@ class ResultListView extends ItemView {
       } else {
         new Notice(`'${file.path}' not found`);
         this.data.items = this.data.items.filter((fp) => fp.path !== file.path);
-        this.redraw(this.data);
+        this.redraw();
       }
     };
 
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
-    data.items.forEach((currentFile) => {
+    this.data.items.forEach((currentFile) => {
       // The info that will appear on hover
       let jsonInfo = JSON.stringify(currentFile, null, 4);
 
