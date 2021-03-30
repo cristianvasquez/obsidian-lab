@@ -39,6 +39,7 @@ const getFilesRecursively = (directory) => {
 /**
  * Main
  */
+
 let results = [];
 let maxResults = 20;
 let vaultDir = process.argv[3];

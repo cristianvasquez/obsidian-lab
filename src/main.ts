@@ -17,7 +17,7 @@ const getDefaultSettings = function (currentVaultPath: string): LabSettings {
         name: 'Random score, javascript implementation',
         type: 'result-list',
         trigger: 'invoke-on-focus',
-        command: `node ${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.js`,
+        command: `node "${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.js"`,
         position: 'leaf-right',
         debug: 'verbose',
       },
@@ -25,7 +25,7 @@ const getDefaultSettings = function (currentVaultPath: string): LabSettings {
         name: 'Random score, python implementation',
         type: 'result-list',
         trigger: 'invoke-on-focus',
-        command: `python ${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.py`,
+        command: `python "${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.py"`,
         position: 'leaf-right',
         debug: 'verbose',
       },
@@ -57,13 +57,13 @@ export default class PythonLabPlugin extends Plugin {
     const buildCommand = (base: string, parameter: Parameter) => {
        let vaultPath = this.getVaultPath();
        let command = base;
-       command = `${command} --vault '${vaultPath}'`;
+       command = `${command} --vault "${vaultPath}"`;
 
        if (parameter.path) {
-         command = `${command} --path '${parameter.path}'`;
+         command = `${command} --path "${parameter.path}"`;
        }
        if (parameter.textSelection) {
-         command = `${command} --textSelection '${parameter.textSelection}'`;
+         command = `${command} --textSelection "${parameter.textSelection}"`;
        }
        return command;
     }
