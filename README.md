@@ -8,8 +8,8 @@ Clone this into
 
 /{vault}/.obsidian/plugins
 
-
 Install dependencies
+
 ```
 yarn install
 ```
@@ -19,6 +19,15 @@ build the app
 ```
 yarn build
 ```
+
+This will build a main file. Activate the plugin. 
+
+----
+
+Run the [server](./server)
+
+
+
 
 ## Stage 1: Get similar notes to the current one.
 
