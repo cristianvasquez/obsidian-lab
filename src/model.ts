@@ -1,25 +1,31 @@
-interface LabSettings {
-  experiments: Experiment[];
+interface Settings {
+  commands: Command[];
 }
 
-interface Parameter {
-  label: string; // Human readable indicator, for example 'pagerank'
-  path?: string; // The current note path
-  textSelection?: string; // What's currently selected
-}
-
-interface Experiment {
+interface Command {
   name: string;
-  type: 'result-list';
+  url: string;
+  type: 'result-list' | 'paste-text' | 'text-panel';
   position: 'leaf-left' | 'leaf-right';
-  trigger: 'invoke-on-focus' | 'command';
+  trigger: 'invoke-on-focus' | 'only-hotkey';
   debug: 'verbose' | 'off';
-  command?: string;
-  call?(parameter: Parameter): any;
+  modelId?:string
+}
+
+interface Input {
+  vaultPath: string; // The current vault
+  activeNotePath?: string; // The active note (if there is one)
+  selectedText?: string; // The selected text (if there is)
+  modelId?: string; // when having different ML models.
 }
 
 interface Item {
   path: string;
   name: string;
   info?: object;
+}
+
+interface ResultListState {
+  label?:string;
+  items: Item[];
 }

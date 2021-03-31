@@ -1,6 +1,7 @@
 # Intellij
 *.iml
 .idea
+__pycache__
 
 # npm
 node_modules

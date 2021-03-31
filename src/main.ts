@@ -10,31 +10,23 @@ import {
 } from 'obsidian';
 import { ResultListView } from './resultList';
 
-const getDefaultSettings = function (currentVaultPath: string): LabSettings {
+const getDefaultSettings = function (currentVaultPath: string): Settings {
   return {
-    experiments: [
+    commands: [
       {
-        name: 'Random score, javascript implementation',
+        name: 'Random score similarity',
+        url: 'http://localhost:5000/random',
         type: 'result-list',
         trigger: 'invoke-on-focus',
-        command: `node "${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.js"`,
-        position: 'leaf-right',
         debug: 'verbose',
-      },
-      {
-        name: 'Random score, python implementation',
-        type: 'result-list',
-        trigger: 'invoke-on-focus',
-        command: `python "${currentVaultPath}/.obsidian/plugins/obsidian-lab/examples/randomScore.py"`,
         position: 'leaf-right',
-        debug: 'verbose',
       },
     ],
   };
 };
 
 export default class PythonLabPlugin extends Plugin {
-  public settings: LabSettings;
+  public settings: Settings;
   public view: ResultListView;
 
   public getVaultPath(): string {
@@ -44,8 +36,6 @@ export default class PythonLabPlugin extends Plugin {
     return this.app.vault.adapter.getBasePath();
   }
 
-
-
   public async onload(): Promise<void> {
     console.log('loading python lab plugin');
 
@@ -54,136 +44,92 @@ export default class PythonLabPlugin extends Plugin {
 
     await this.loadSettings();
 
-    const buildCommand = (base: string, parameter: Parameter) => {
-       let vaultPath = this.getVaultPath();
-       let command = base;
-       command = `${command} --vault "${vaultPath}"`;
+    if (this.settings && this.settings.commands) {
+      this.settings.commands.forEach((command: Command, index: number) => {
+        switch (command.type) {
+          case 'result-list': {
+            let commandId: string = `obsidian_lab_${index}`;
 
-       if (parameter.path) {
-         command = `${command} --path "${parameter.path}"`;
-       }
-       if (parameter.textSelection) {
-         command = `${command} --textSelection "${parameter.textSelection}"`;
-       }
-       return command;
-    }
+            if (command.debug == 'verbose') {
+              console.log('registering', command);
+            }
+            this.registerView(commandId, (leaf) => {
+              let commandView = new ResultListView(
+                leaf,
+                commandId,
+                command.name,
+              );
 
-    if (this.settings && this.settings.experiments) {
-      this.settings.experiments.forEach(
-        (experiment: Experiment, index: number) => {
-          switch (experiment.type) {
-            case 'result-list': {
-
-            // Creates an invocator an experiment of type result-list
-            const buildCall = (experiment: Experiment) => {
-              let invokeCommand: (
-                parameter: Parameter,
-              ) => Promise<Item[]> = function (parameter: Parameter) {
-                // Building a command from the parameter object
-                let command = buildCommand(experiment.command, parameter);
-
-                // The function that executes the script
-                return new Promise<Item[]>((resolve, reject) => {
-                  const exec = require('child_process').exec;
-
-                  
-                  if (experiment.debug == 'verbose') {
-                    console.log('executing', command);
+              // The function that triggers each time 'command' is executed
+              // Probably there many clean ways to gather this info
+              const handleCall = async () => {
+                let parameters: Input = {
+                  vaultPath: this.getVaultPath(),
+                };
+                const activeView = this.app.workspace.activeLeaf.view;
+                if (activeView instanceof MarkdownView) {
+                  const editor = activeView.sourceMode.cmEditor;
+                  let selectedText = editor.getSelection();
+                  if (selectedText) {
+                    parameters.selectedText = selectedText;
                   }
+                  if (activeView.file && activeView.file.path) {
+                    parameters.activeNotePath = activeView.file.path;
+                  }
+                  if (command.modelId) {
+                    parameters.modelId = command.modelId;
+                  }
+                }
 
-                  exec(command, (error: any, stdout: any, stderr: any) => {
-                    if (error) {
-                      new Notice(
-                        `${experiment.name}: could not execute, see console`,
-                      );
-                      console.error(error);
-                      reject(error);
-                    } else {
-                      try {
-                        resolve(JSON.parse(stdout));
-                      } catch (error) {
-                        new Notice(
-                          `${experiment.name}: could not parse result, see console`,
-                        );
-                        console.error(stdout);
-                        reject(error);
-                      }
-                    }
+                fetch(command.url, {
+                  method: 'POST',
+                  body: JSON.stringify(parameters),
+                  headers: {
+                    'content-type': 'application/json',
+                  },
+                })
+                  .then(function (response) {
+                    return response.json();
+                  })
+                  .then(function (result) {
+                    const data = result;
+                    data.label = command.name;
+                    commandView.setData(data);
+                    commandView.redraw();
+                  })
+                  .catch(function (error) {
+                    new Notice(error);
+                    console.error(error);
                   });
-                });
               };
-              return invokeCommand;
-            };
 
-              if (experiment.command) {
-                let call = buildCall(experiment);
-                let experimentId: string = `experiment_tab_${index}`;
+              console.log('registering', command);
+              this.addCommand({
+                id: commandId,
+                name: command.name,
+                callback: () => handleCall(),
+                hotkeys: [],
+              });
 
-                this.registerView(experimentId, (leaf) => {
-                  let experimentView = new ResultListView(
-                    leaf,
-                    experiment,
-                    experimentId,
-                  );
-
-                  // The function that triggers each time 'command' is executed
-                  // Probably there many clean ways to gather this info
-                  const handleCall = async () => {
-                    let parameter: Parameter = {
-                      label: `${experiment.name}`,
-                    };
-                    const activeView = this.app.workspace.activeLeaf.view;
-                    if (activeView instanceof MarkdownView) {
-                      const editor = activeView.sourceMode.cmEditor;
-                      let textSelection = editor.getSelection();
-                      if (textSelection) {
-                        parameter.textSelection = textSelection;
-                      }
-                      if (activeView.file && activeView.file.path) {
-                        parameter.path = activeView.file.path;
-                      }
-                    }
-
-                    const items = await call(parameter);
-
-                    experimentView.setData({
-                      parameter: parameter,
-                      items: items,
-                    });
-
-                    experimentView.redraw();
-                  };
-
-                  this.addCommand({
-                    id: `python_lab_${index}`,
-                    name: experiment.name,
-                    callback: () => handleCall(),
-                    hotkeys: [],
-                  });
-
-                  return experimentView;
-                });
-
-                experiment.call = call;
-              } else {
-                const errorMessage = `Experiment:[${experiment.name}] command:[${experiment.command}]`;
-                new Notice(errorMessage);
-                console.error(errorMessage);
+              if (command.trigger == 'invoke-on-focus') {
+                commandView.registerCallback(handleCall);
               }
 
-              break;
-            }
+              return commandView;
+            });
 
-            default: {
-              const errorMessage = `Experiment:[${experiment.name}] type:[${experiment.type}] not implemented`;
-              new Notice(errorMessage);
-              console.error(errorMessage);
-
-              break;
-            }
+            break;
           }
-        },
-      );
+
+          default: {
+            const errorMessage = `Experiment:[${command.name}] type:[${command.type}] not implemented`;
+            new Notice(errorMessage);
+            console.error(errorMessage);
+
+            break;
+          }
+        }
+      });
     } else {
       console.log(`settings[${this.settings}]`);
     }
@@ -197,7 +143,6 @@ export default class PythonLabPlugin extends Plugin {
   }
 
   public async loadSettings(): Promise<void> {
-    console.log('load settings');
     const defaultSettings = getDefaultSettings(this.getVaultPath());
     this.settings = Object.assign(defaultSettings, await super.loadData());
   }
@@ -210,35 +155,33 @@ export default class PythonLabPlugin extends Plugin {
    * Init all experiments
    */
   private readonly initView = (): void => {
-    if (this.settings && this.settings.experiments) {
-      this.settings.experiments.forEach(
-        (experiment: Experiment, index: number) => {
-          let experimentId: string = `experiment_tab_${index}`;
+    if (this.settings && this.settings.commands) {
+      this.settings.commands.forEach((experiment: Command, index: number) => {
+        let commandId: string = `obsidian_lab_${index}`;
 
-          if (!this.app.workspace.getLeavesOfType(experimentId).length) {
-            let viewState = {
-              type: experimentId,
-              active: true,
-            };
-            switch (experiment.position) {
-              case 'leaf-left': {
-                this.app.workspace.getLeftLeaf(false).setViewState(viewState);
-                break;
-              }
-              case 'leaf-right': {
-                this.app.workspace.getRightLeaf(false).setViewState(viewState);
-                break;
-              }
-              default: {
-                console.log(
-                  `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
-                );
-                break;
-              }
+        if (!this.app.workspace.getLeavesOfType(commandId).length) {
+          let viewState = {
+            type: commandId,
+            active: true,
+          };
+          switch (experiment.position) {
+            case 'leaf-left': {
+              this.app.workspace.getLeftLeaf(false).setViewState(viewState);
+              break;
+            }
+            case 'leaf-right': {
+              this.app.workspace.getRightLeaf(false).setViewState(viewState);
+              break;
+            }
+            default: {
+              console.log(
+                `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
+              );
+              break;
             }
           }
-        },
-      );
+        }
+      });
     }
   };
 }

@@ -1,51 +1,58 @@
 import {
   ItemView,
   Menu,
-  TFile,
   WorkspaceLeaf,
   FileSystemAdapter,
   Notice,
-  MarkdownView,
+  TFile,
 } from 'obsidian';
 var path = require('path');
 
-interface ResultListState {
-  parameter?: Parameter;
-  items: Item[];
-}
-
 class ResultListView extends ItemView {
-  private viewTypeId: string;
-  private experiment: Experiment;
-  private data: ResultListState;
+  private commandId: string;
+  private label: string;
+  private state: ResultListState;
 
-  constructor(leaf: WorkspaceLeaf, experiment: Experiment, viewTypeId: string) {
+  constructor(leaf: WorkspaceLeaf, commandId: string, label: string) {
     super(leaf);
-
-    this.experiment = experiment;
+    this.commandId = commandId;
+  
+    this.label = label;
 
     this.setData({
-      items: [],
-    });
+      label:'',
+      items:[]
+    })
 
-    this.viewTypeId = viewTypeId;
     this.redraw();
   }
 
-  public setData(data: ResultListState) {
-    this.data = data;
+  public setData(state: ResultListState) {
+    this.state = state;
   }
 
   public getViewType(): string {
-    return this.viewTypeId;
+    return this.commandId;
   }
 
   public getDisplayText(): string {
-    return this.experiment.name;
+    return this.label;
   }
 
   public getIcon(): string {
     return 'lab';
+  }
+
+  // Used to handle 'onfocus'
+  registerCallback(callback: () => Promise<void>) {
+    const handleOpenFile = async (openedFile: TFile): Promise<void> => {
+      if (!openedFile) {
+        return;
+      }
+      callback();
+    };
+
+    this.registerEvent(this.app.workspace.on('file-open', handleOpenFile));
   }
 
   /**
@@ -59,6 +66,7 @@ class ResultListView extends ItemView {
           .setIcon('sweep')
           .onClick(async () => {
             this.setData({
+              label: '',
               items: [],
             });
             this.redraw();
@@ -69,33 +77,15 @@ class ResultListView extends ItemView {
           .setTitle('Close')
           .setIcon('cross')
           .onClick(() => {
-            this.app.workspace.detachLeavesOfType(this.viewTypeId);
+            this.app.workspace.detachLeavesOfType(this.commandId);
           });
       });
   }
 
+  onfocusHandler: (openedFile: TFile) => Promise<void>;
+
   public load(): void {
     super.load();
-
-    if (this.experiment.trigger == 'invoke-on-focus') {
-      const handleOpenFile = async (openedFile: TFile): Promise<void> => {
-        if (!openedFile) {
-          return;
-        }
-        this.data.parameter = {
-          label: openedFile.name,
-          path: openedFile.path,
-        };
-
-        this.data.items = await this.experiment.call(
-          this.data.parameter,
-        );
-
-        this.redraw();
-      };
-
-      this.registerEvent(this.app.workspace.on('file-open', handleOpenFile));
-    }
   }
 
   /**
@@ -106,11 +96,11 @@ class ResultListView extends ItemView {
     const openFile = this.app.workspace.getActiveFile();
     const rootEl = createDiv({ cls: 'nav-folder mod-root' });
 
-    if (this.data.parameter) {
+    if (this.state.label) {
       const context = rootEl.createDiv({
         title: 'context',
         cls: 'nav-file python-lab-context',
-        text: this.data.parameter.label,
+        text: this.state.label,
       });
     }
 
@@ -137,36 +127,41 @@ class ResultListView extends ItemView {
         leaf.openFile(targetFile);
       } else {
         new Notice(`'${file.path}' not found`);
-        this.data.items = this.data.items.filter((fp) => fp.path !== file.path);
+        this.state.items = this.state.items.filter(
+          (fp) => fp.path !== file.path,
+        );
         this.redraw();
       }
     };
 
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
-    this.data.items.forEach((currentFile) => {
-      // The info that will appear on hover
-      let jsonInfo = JSON.stringify(currentFile, null, 4);
+    if (this.state && this.state.items){
+      this.state.items.forEach((currentFile) => {
+        // The info that will appear on hover
+        let jsonInfo = JSON.stringify(currentFile, null, 4);
 
-      const navFile = childrenEl.createDiv({
-        title: jsonInfo,
-        cls: 'nav-file',
+        const navFile = childrenEl.createDiv({
+          title: jsonInfo,
+          cls: 'nav-file',
+        });
+        const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+
+        if (openFile && currentFile.path === openFile.path) {
+          navFileTitle.addClass('is-active');
+        }
+
+        navFileTitle.createDiv({
+          cls: 'nav-file-title-content',
+          text: currentFile.name,
+        });
+
+        navFile.onClickEvent((event) =>
+          clickElement(currentFile, event.ctrlKey || event.metaKey),
+        );
       });
-      const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+    }
 
-      if (openFile && currentFile.path === openFile.path) {
-        navFileTitle.addClass('is-active');
-      }
-
-      navFileTitle.createDiv({
-        cls: 'nav-file-title-content',
-        text: currentFile.name,
-      });
-
-      navFile.onClickEvent((event) =>
-        clickElement(currentFile, event.ctrlKey || event.metaKey),
-      );
-    });
 
     const contentEl = this.containerEl.children[1];
     contentEl.empty();
