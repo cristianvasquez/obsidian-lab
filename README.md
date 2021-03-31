@@ -24,7 +24,7 @@ This will build a main file. Activate the plugin.
 
 ----
 
-Run the [server](./server)
+Run the [server](./examples/server.py)
 
 
 
