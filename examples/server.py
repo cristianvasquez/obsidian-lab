@@ -1,40 +1,53 @@
 import os
 import random
 from flask_cors import CORS, cross_origin
-from flask import Flask
-from flask import request
+
+from flask_json_schema import JsonSchema, JsonValidationError
+from flask import Flask, jsonify, request
+
 
 app = Flask(__name__)
 
 # Fixes
 # Access to fetch at 'http://localhost:5000/' from origin 'app://obsidian.md'
-
 obsidian_origin = "app://obsidian.md"
-cors = CORS(app, resources={r"/random": {"origins": obsidian_origin}})
-
+cors = CORS(app, resources = { r"/random": {"origins": obsidian_origin}})
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-model = 0
-
+schema = JsonSchema(app)
 
 # Example call
-# {commandId: "obsidian_lab_0", vaultPath: "/home/cvasquez/obsidian/development", selectedText: "hi", activeNotePath: "snippets-plugin/Test1.md"}
-
-@app.route('/index', methods=['POST'])
-@cross_origin(origin=obsidian_origin,headers=['Content-Type','Authorization'])
-def re_index():
-    super.model = random.random()
-    return {
-        "status": "ok",
-        "model": model,
+# { 
+#   vaultPath: "/home/cvasquez/obsidian/development", 
+#   notePath: "snippets-plugin/Test1.md"
+#   text: "Some selected text", 
+#   variant: "model-3", 
+# }
+input_schema = {
+    'required': ['vaultPath'],
+    'properties': {
+        'vaultPath': { 'type': 'string' },
+        'notePath': { 'type': 'string' },
+        'text': { 'type': 'string' },
+        'variant': { 'type': 'string' },
     }
+}
 
+@app.errorhandler(JsonValidationError)
+def validation_error(e):
+    error = {
+        'message': e.message,
+        'status': 400,
+        'errors': [validation_error.message for validation_error  in e.errors]
+        }    
+    return jsonify(error)
 
 @app.route('/random', methods=['POST'])
+@schema.validate(input_schema)
 def get_random_files(max_results=20):
+    print('hit')
     print(request.json)
     vault_path = request.json['vaultPath']
-    active_note_path = request.json['activeNotePath']
 
     items = []
     exclude = {'.obsidian', '.trash', '.git'}
@@ -53,6 +66,15 @@ def get_random_files(max_results=20):
     items.sort(key=lambda x: x['info']['score'], reverse=True)
     return {
         "items": items,
+    }
+
+@app.route('/text', methods=['POST'])
+@schema.validate(input_schema)
+def process_text(max_results=20):
+    text = request.json['text']
+    
+    return {
+        "text": f'Modified[${text}]',
     }
 
 

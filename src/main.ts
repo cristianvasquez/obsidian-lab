@@ -7,6 +7,7 @@ import {
   FileSystemAdapter,
   Notice,
   MarkdownView,
+  View,
 } from 'obsidian';
 import { ResultListView } from './resultList';
 
@@ -21,6 +22,14 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         debug: 'verbose',
         position: 'leaf-right',
       },
+      // {
+      //   name: 'Index test',
+      //   url: 'http://localhost:5000/index',
+      //   type: 'result-list',
+      //   trigger: 'invoke-on-focus',
+      //   debug: 'verbose',
+      //   position: 'leaf-right',
+      // },
     ],
   };
 };
@@ -45,14 +54,65 @@ export default class PythonLabPlugin extends Plugin {
     await this.loadSettings();
 
     if (this.settings && this.settings.commands) {
+      // The function that triggers each time 'command' is executed
+      // Probably there many clean ways to gather this info
+
+      const buildHandler = (command: Command, commandView: CommandView) => {
+        return async () => {
+          let parameters: Input = {
+            vaultPath: this.getVaultPath(),
+          };
+          const activeView = this.app.workspace.activeLeaf.view;
+          if (activeView instanceof MarkdownView) {
+            const editor = activeView.sourceMode.cmEditor;
+            let selectedText = editor.getSelection();
+            if (selectedText) {
+              parameters.text = selectedText;
+            }
+            if (activeView.file && activeView.file.path) {
+              parameters.notePath = activeView.file.path;
+            }
+            if (command.modelId) {
+              parameters.variant = command.modelId;
+            }
+          }
+
+          fetch(command.url, {
+            method: 'POST',
+            // body: JSON.stringify(parameters),
+            body: JSON.stringify({ error: 'cueeek' }),
+            headers: {
+              'content-type': 'application/json',
+            },
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.errors) {
+                console.error(data);
+                new Notification(data.message);
+              } else {
+                data.label = command.name;
+                commandView.setData(data);
+                commandView.redraw();
+              }
+            })
+            .catch(function (error) {
+              new Notice(error);
+              console.error(error);
+            });
+        };
+      };
+
       this.settings.commands.forEach((command: Command, index: number) => {
+        if (command.debug == 'verbose') {
+          console.log(`registering [${command.name}] as [${command.type}]`);
+        }
         switch (command.type) {
           case 'result-list': {
             let commandId: string = `obsidian_lab_${index}`;
 
-            if (command.debug == 'verbose') {
-              console.log('registering', command);
-            }
             this.registerView(commandId, (leaf) => {
               let commandView = new ResultListView(
                 leaf,
@@ -60,54 +120,12 @@ export default class PythonLabPlugin extends Plugin {
                 command.name,
               );
 
-              // The function that triggers each time 'command' is executed
-              // Probably there many clean ways to gather this info
-              const handleCall = async () => {
-                let parameters: Input = {
-                  vaultPath: this.getVaultPath(),
-                };
-                const activeView = this.app.workspace.activeLeaf.view;
-                if (activeView instanceof MarkdownView) {
-                  const editor = activeView.sourceMode.cmEditor;
-                  let selectedText = editor.getSelection();
-                  if (selectedText) {
-                    parameters.selectedText = selectedText;
-                  }
-                  if (activeView.file && activeView.file.path) {
-                    parameters.activeNotePath = activeView.file.path;
-                  }
-                  if (command.modelId) {
-                    parameters.modelId = command.modelId;
-                  }
-                }
+              const handleCall = buildHandler(command, commandView);
 
-                fetch(command.url, {
-                  method: 'POST',
-                  body: JSON.stringify(parameters),
-                  headers: {
-                    'content-type': 'application/json',
-                  },
-                })
-                  .then(function (response) {
-                    return response.json();
-                  })
-                  .then(function (result) {
-                    const data = result;
-                    data.label = command.name;
-                    commandView.setData(data);
-                    commandView.redraw();
-                  })
-                  .catch(function (error) {
-                    new Notice(error);
-                    console.error(error);
-                  });
-              };
-
-              console.log('registering', command);
               this.addCommand({
                 id: commandId,
                 name: command.name,
-                callback: () => handleCall(),
+                callback: () => handleCall,
                 hotkeys: [],
               });
 
@@ -152,11 +170,11 @@ export default class PythonLabPlugin extends Plugin {
   }
 
   /**
-   * Init all experiments
+   * Init all commands
    */
   private readonly initView = (): void => {
     if (this.settings && this.settings.commands) {
-      this.settings.commands.forEach((experiment: Command, index: number) => {
+      this.settings.commands.forEach((command: Command, index: number) => {
         let commandId: string = `obsidian_lab_${index}`;
 
         if (!this.app.workspace.getLeavesOfType(commandId).length) {
@@ -164,7 +182,7 @@ export default class PythonLabPlugin extends Plugin {
             type: commandId,
             active: true,
           };
-          switch (experiment.position) {
+          switch (command.position) {
             case 'leaf-left': {
               this.app.workspace.getLeftLeaf(false).setViewState(viewState);
               break;
@@ -175,7 +193,7 @@ export default class PythonLabPlugin extends Plugin {
             }
             default: {
               console.log(
-                `Experiment:[${experiment.name}] position:[${experiment.position}] not implemented`,
+                `Command:[${command.name}] position:[${command.position}] not implemented`,
               );
               break;
             }
@@ -202,15 +220,15 @@ class PythonLabSettings extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Registered experiments' });
+    containerEl.createEl('h2', { text: 'Registered commands' });
 
     const div = containerEl.createEl('div', {
       cls: 'python-lab-text',
     });
 
     new Setting(containerEl)
-      .setName('Experiments')
-      .setDesc('config for each experiment')
+      .setName('Commands')
+      .setDesc('config for each command')
       .addTextArea((text) => {
         text
           .setPlaceholder(

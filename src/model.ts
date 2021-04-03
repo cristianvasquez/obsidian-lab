@@ -12,11 +12,16 @@ interface Command {
   modelId?:string
 }
 
+interface CommandView {
+  setData: any;
+  redraw: any;
+}
+
 interface Input {
   vaultPath: string; // The current vault
-  activeNotePath?: string; // The active note (if there is one)
-  selectedText?: string; // The selected text (if there is)
-  modelId?: string; // when having different ML models.
+  notePath?: string; // The active note (if there is one)
+  text?: string; // The selected text (if there is)
+  variant?: string; // when having different ML models.
 }
 
 interface Item {
