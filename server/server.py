@@ -14,9 +14,10 @@ app = Flask(__name__)
 # Fixes
 # Access to fetch at 'http://localhost:5000/' from origin 'app://obsidian.md'
 obsidian_origin = "app://obsidian.md"
-cors = CORS(app, resources = { r"/random": {"origins": obsidian_origin}})
+# cors = CORS(app, resources = { r"/random": {"origins": obsidian_origin}})
+cors = CORS(app, origins=obsidian_origin)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
+    
 schema = JsonSchema(app)
 
 # Example call
@@ -74,10 +75,15 @@ def get_random_files(max_results=20):
 @app.route('/text', methods=['POST'])
 @schema.validate(input_schema)
 def process_text(max_results=20):
-    text = request.json['text']
+
+    result = 'No text selected'
+
+    if "text" in request.json:
+        text = request.json['text']
+        result = f'Modified[${text}]'
     
     return {
-        "contents": f'Modified[${text}]',
+        "contents": result,
     }
 
 import scripts

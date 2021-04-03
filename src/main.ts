@@ -21,7 +21,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         invokeOnFocus: true,
         addHotkey: false,
         debug: 'verbose',
-        userInterface: 'panel-left',
+        userInterface: 'panel-right',
       },
       {
         name: 'Text test',
@@ -30,7 +30,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         invokeOnFocus: true,
         addHotkey: false,
         debug: 'verbose',
-        userInterface: 'panel-left',
+        userInterface: 'panel-right',
       },
     ],
   };
@@ -45,6 +45,10 @@ export default class PythonLabPlugin extends Plugin {
       throw new Error('app.vault is not a FileSystemAdapter instance');
     }
     return this.app.vault.adapter.getBasePath();
+  }
+
+  private buildCommandId(index: number): string {
+    return `obsidian_lab_${index}`;
   }
 
   public async onload(): Promise<void> {
@@ -122,10 +126,9 @@ export default class PythonLabPlugin extends Plugin {
           command.userInterface == 'panel-left' ||
           command.userInterface == 'panel-right'
         ) {
-          let commandId: string = `obsidian_lab_${index}`;
+          let commandId: string = this.buildCommandId(index);
 
           this.registerView(commandId, (leaf) => {
-            
             let commandView = new ResultListView(leaf, commandId, command.name);
 
             const handleCall = buildHandler(command, commandView);
@@ -143,8 +146,8 @@ export default class PythonLabPlugin extends Plugin {
 
             return commandView;
           });
-        } else if (command.userInterface=='replace-or-insert'){
-          throw Error('to implement')
+        } else if (command.userInterface == 'replace-or-insert') {
+          throw Error('to implement');
         }
       });
     } else {
@@ -174,20 +177,29 @@ export default class PythonLabPlugin extends Plugin {
   private readonly initView = (): void => {
     if (this.settings && this.settings.commands) {
       this.settings.commands.forEach((command: Command, index: number) => {
-        let commandId: string = `obsidian_lab_${index}`;
+        let commandId: string = this.buildCommandId(index);
 
         // If is not active
         if (!this.app.workspace.getLeavesOfType(commandId).length) {
-          // And is a panel
-          if (
-            command.userInterface == 'panel-left' ||
-            command.userInterface == 'panel-right'
-          ) {
-            // Make active
-            this.app.workspace.getLeftLeaf(false).setViewState({
-              type: commandId,
-              active: true,
-            });
+          switch (command.userInterface) {
+            case 'panel-left': {
+              this.app.workspace.getLeftLeaf(false).setViewState({
+                type: commandId,
+                active: true,
+              });
+              break;
+            }
+            case 'panel-right': {
+              this.app.workspace.getRightLeaf(false).setViewState({
+                type: commandId,
+                active: true,
+              });
+              break;
+            }
+            default: {
+              //statements;
+              break;
+            }
           }
         }
       });
