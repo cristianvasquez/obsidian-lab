@@ -37,3 +37,10 @@ Run the [server](./examples/server.py)
 * [X] Show result info on hover.
 * [X] Python example.
 * [X] Javascript example.
+
+## Stage 2: Something usable
+
+* [X] HTTP calls
+* [ ] Python plugin system 
+* [ ] Add text handler
+* [ ] Add graph clustering handler
