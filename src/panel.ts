@@ -8,26 +8,26 @@ import {
 } from 'obsidian';
 var path = require('path');
 
-class ResultListView extends ItemView {
+class LabPanel extends ItemView {
   private commandId: string;
   private label: string;
-  private state: ResultListState;
+  private state: PanelState;
 
   constructor(leaf: WorkspaceLeaf, commandId: string, label: string) {
     super(leaf);
     this.commandId = commandId;
-  
+
     this.label = label;
 
     this.setData({
-      label:'',
-      items:[]
-    })
+      label: '',
+      contents: [],
+    });
 
     this.redraw();
   }
 
-  public setData(state: ResultListState) {
+  public setData(state: PanelState) {
     this.state = state;
   }
 
@@ -67,7 +67,7 @@ class ResultListView extends ItemView {
           .onClick(async () => {
             this.setData({
               label: '',
-              items: [],
+              contents: [],
             });
             this.redraw();
           });
@@ -94,16 +94,18 @@ class ResultListView extends ItemView {
 
   public readonly redraw = (): void => {
     const openFile = this.app.workspace.getActiveFile();
-    const rootEl = createDiv({ cls: 'nav-folder mod-root' });
 
+    const rootEl = createDiv({ cls: 'nav-folder mod-root' });
+    // Label of the panel
     if (this.state.label) {
       const context = rootEl.createDiv({
-        title: 'context',
-        cls: 'nav-file python-lab-context',
+        title: 'title',
+        cls: 'nav-file python-lab-title',
         text: this.state.label,
       });
     }
 
+    // Function open on click
     let clickElement = (file: Item, shouldSplit = false): void => {
       let filePath = file.path;
 
@@ -127,41 +129,59 @@ class ResultListView extends ItemView {
         leaf.openFile(targetFile);
       } else {
         new Notice(`'${file.path}' not found`);
-        this.state.items = this.state.items.filter(
-          (fp) => fp.path !== file.path,
-        );
+
+        if (Array.isArray(this.state.contents)) {
+            this.state.contents = this.state.contents.filter(
+              (fp) => fp.path !== file.path,
+            );
+        }
+
         this.redraw();
       }
     };
 
-    const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
+    if (this.state){
 
-    if (this.state && this.state.items){
-      this.state.items.forEach((currentFile) => {
-        // The info that will appear on hover
-        let jsonInfo = JSON.stringify(currentFile, null, 4);
+      // Draw a list, when is a list
+        if (Array.isArray(this.state.contents)) {
 
-        const navFile = childrenEl.createDiv({
-          title: jsonInfo,
-          cls: 'nav-file',
-        });
-        const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+          this.state.contents.forEach((currentFile) => {
+            const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
-        if (openFile && currentFile.path === openFile.path) {
-          navFileTitle.addClass('is-active');
+            // The info that will appear on hover
+            let jsonInfo = JSON.stringify(currentFile, null, 4);
+
+            const navFile = childrenEl.createDiv({
+              title: jsonInfo,
+              cls: 'nav-file',
+            });
+            const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+
+            if (openFile && currentFile.path === openFile.path) {
+              navFileTitle.addClass('is-active');
+            }
+
+            navFileTitle.createDiv({
+              cls: 'nav-file-title-content',
+              text: currentFile.name,
+            });
+
+            navFile.onClickEvent((event) =>
+              clickElement(currentFile, event.ctrlKey || event.metaKey),
+            );
+          });
+        } else if (String.isString(this.state.contents)) {
+          // Draw the contents as a list
+          const context = rootEl.createDiv({
+            title: 'contents',
+            cls: 'python-lab-text',
+            text: this.state.contents,
+          });
+        } else {
+          console.error('cannot draw',this.state)
         }
 
-        navFileTitle.createDiv({
-          cls: 'nav-file-title-content',
-          text: currentFile.name,
-        });
-
-        navFile.onClickEvent((event) =>
-          clickElement(currentFile, event.ctrlKey || event.metaKey),
-        );
-      });
     }
-
 
     const contentEl = this.containerEl.children[1];
     contentEl.empty();
@@ -169,4 +189,4 @@ class ResultListView extends ItemView {
   };
 }
 
-export { ResultListView };
+export { LabPanel as ResultListView };

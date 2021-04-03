@@ -6,6 +6,9 @@ from flask_json_schema import JsonSchema, JsonValidationError
 from flask import Flask, jsonify, request
 
 
+import importlib
+import pkgutil
+
 app = Flask(__name__)
 
 # Fixes
@@ -30,6 +33,7 @@ input_schema = {
         'notePath': { 'type': 'string' },
         'text': { 'type': 'string' },
         'variant': { 'type': 'string' },
+        'script': {'type':'string'}
     }
 }
 
@@ -45,8 +49,6 @@ def validation_error(e):
 @app.route('/random', methods=['POST'])
 @schema.validate(input_schema)
 def get_random_files(max_results=20):
-    print('hit')
-    print(request.json)
     vault_path = request.json['vaultPath']
 
     items = []
@@ -65,8 +67,9 @@ def get_random_files(max_results=20):
 
     items.sort(key=lambda x: x['info']['score'], reverse=True)
     return {
-        "items": items,
+        "contents": items,
     }
+
 
 @app.route('/text', methods=['POST'])
 @schema.validate(input_schema)
@@ -74,10 +77,29 @@ def process_text(max_results=20):
     text = request.json['text']
     
     return {
-        "text": f'Modified[${text}]',
+        "contents": f'Modified[${text}]',
     }
 
+import scripts
+
+def iter_namespace(ns_pkg):
+    # Specifying the second argument (prefix) to iter_modules makes the
+    # returned name an absolute name instead of a relative one. This allows
+    # import_module to work without having to do additional modification to
+    # the name.
+    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
+
+discovered_plugins = {
+    name: importlib.import_module(name)
+    for finder, name, ispkg
+    in iter_namespace(scripts)
+}
 
 if __name__ == '__main__':
     model = random.random()
     app.run()
+
+# print(discovered_plugins)
+
+# for i in discovered_plugins:
+#     discovered_plugins[i]

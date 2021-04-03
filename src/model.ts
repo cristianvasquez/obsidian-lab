@@ -5,9 +5,10 @@ interface Settings {
 interface Command {
   name: string;
   url: string;
-  type: 'result-list' | 'paste-text' | 'text-panel';
-  position: 'leaf-left' | 'leaf-right';
-  trigger: 'invoke-on-focus' | 'only-hotkey';
+  type: 'collection' | 'text' | 'graph';
+  userInterface: 'panel-left' | 'panel-right' | 'replace-or-insert';
+  invokeOnFocus: boolean,
+  addHotkey: boolean,
   debug: 'verbose' | 'off';
   modelId?:string
 }
@@ -25,12 +26,12 @@ interface Input {
 }
 
 interface Item {
-  path: string;
+  path: string; // Can be an internal link (perhaps a url?)
   name: string;
   info?: object;
 }
 
-interface ResultListState {
-  label?:string;
-  items: Item[];
+interface PanelState {
+  label?: string;
+  contents: Item[] | string;
 }

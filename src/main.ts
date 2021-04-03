@@ -9,7 +9,7 @@ import {
   MarkdownView,
   View,
 } from 'obsidian';
-import { ResultListView } from './resultList';
+import { ResultListView } from './panel';
 
 const getDefaultSettings = function (currentVaultPath: string): Settings {
   return {
@@ -17,19 +17,21 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
       {
         name: 'Random score similarity',
         url: 'http://localhost:5000/random',
-        type: 'result-list',
-        trigger: 'invoke-on-focus',
+        type: 'collection',
+        invokeOnFocus: true,
+        addHotkey: false,
         debug: 'verbose',
-        position: 'leaf-right',
+        userInterface: 'panel-left',
       },
-      // {
-      //   name: 'Index test',
-      //   url: 'http://localhost:5000/index',
-      //   type: 'result-list',
-      //   trigger: 'invoke-on-focus',
-      //   debug: 'verbose',
-      //   position: 'leaf-right',
-      // },
+      {
+        name: 'Text test',
+        url: 'http://localhost:5000/text',
+        type: 'text',
+        invokeOnFocus: true,
+        addHotkey: false,
+        debug: 'verbose',
+        userInterface: 'panel-left',
+      },
     ],
   };
 };
@@ -77,10 +79,13 @@ export default class PythonLabPlugin extends Plugin {
             }
           }
 
+          let requestBody = JSON.stringify(parameters);
+          if (command.debug == 'verbose') {
+            console.info('requestBody', requestBody);
+          }
           fetch(command.url, {
             method: 'POST',
-            // body: JSON.stringify(parameters),
-            body: JSON.stringify({ error: 'cueeek' }),
+            body: requestBody,
             headers: {
               'content-type': 'application/json',
             },
@@ -89,6 +94,9 @@ export default class PythonLabPlugin extends Plugin {
               return response.json();
             })
             .then(function (data) {
+              if (command.debug == 'verbose') {
+                console.info('data', data);
+              }
               if (data.errors) {
                 console.error(data);
                 new Notification(data.message);
@@ -109,43 +117,34 @@ export default class PythonLabPlugin extends Plugin {
         if (command.debug == 'verbose') {
           console.log(`registering [${command.name}] as [${command.type}]`);
         }
-        switch (command.type) {
-          case 'result-list': {
-            let commandId: string = `obsidian_lab_${index}`;
 
-            this.registerView(commandId, (leaf) => {
-              let commandView = new ResultListView(
-                leaf,
-                commandId,
-                command.name,
-              );
+        if (
+          command.userInterface == 'panel-left' ||
+          command.userInterface == 'panel-right'
+        ) {
+          let commandId: string = `obsidian_lab_${index}`;
 
-              const handleCall = buildHandler(command, commandView);
+          this.registerView(commandId, (leaf) => {
+            
+            let commandView = new ResultListView(leaf, commandId, command.name);
 
-              this.addCommand({
-                id: commandId,
-                name: command.name,
-                callback: () => handleCall,
-                hotkeys: [],
-              });
+            const handleCall = buildHandler(command, commandView);
 
-              if (command.trigger == 'invoke-on-focus') {
-                commandView.registerCallback(handleCall);
-              }
-
-              return commandView;
+            this.addCommand({
+              id: commandId,
+              name: command.name,
+              callback: () => handleCall,
+              hotkeys: [],
             });
 
-            break;
-          }
+            if (command.invokeOnFocus) {
+              commandView.registerCallback(handleCall);
+            }
 
-          default: {
-            const errorMessage = `Experiment:[${command.name}] type:[${command.type}] not implemented`;
-            new Notice(errorMessage);
-            console.error(errorMessage);
-
-            break;
-          }
+            return commandView;
+          });
+        } else if (command.userInterface=='replace-or-insert'){
+          throw Error('to implement')
         }
       });
     } else {
@@ -177,26 +176,18 @@ export default class PythonLabPlugin extends Plugin {
       this.settings.commands.forEach((command: Command, index: number) => {
         let commandId: string = `obsidian_lab_${index}`;
 
+        // If is not active
         if (!this.app.workspace.getLeavesOfType(commandId).length) {
-          let viewState = {
-            type: commandId,
-            active: true,
-          };
-          switch (command.position) {
-            case 'leaf-left': {
-              this.app.workspace.getLeftLeaf(false).setViewState(viewState);
-              break;
-            }
-            case 'leaf-right': {
-              this.app.workspace.getRightLeaf(false).setViewState(viewState);
-              break;
-            }
-            default: {
-              console.log(
-                `Command:[${command.name}] position:[${command.position}] not implemented`,
-              );
-              break;
-            }
+          // And is a panel
+          if (
+            command.userInterface == 'panel-left' ||
+            command.userInterface == 'panel-right'
+          ) {
+            // Make active
+            this.app.workspace.getLeftLeaf(false).setViewState({
+              type: commandId,
+              active: true,
+            });
           }
         }
       });
