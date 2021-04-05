@@ -8,5 +8,5 @@ class Plugin:
 
     def execute(self, note_path, text):
         return {
-            "contents": f'Modified[{text}]',
+            "contents": text.upper(),
         }

@@ -10,7 +10,6 @@ interface Command {
   invokeOnFocus: boolean,
   addHotkey: boolean,
   debug: 'verbose' | 'off';
-  modelId?:string
 }
 
 interface CommandView {

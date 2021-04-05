@@ -24,13 +24,13 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         userInterface: 'panel-right',
       },
       {
-        name: 'Text test',
+        name: 'Replace text',
         url: 'http://localhost:5000/scripts/text',
         type: 'text',
-        invokeOnFocus: true,
-        addHotkey: false,
+        invokeOnFocus: false,
+        addHotkey: true,
         debug: 'verbose',
-        userInterface: 'panel-right',
+        userInterface: 'replace-or-insert',
       },
     ],
   };
@@ -59,9 +59,9 @@ export default class PythonLabPlugin extends Plugin {
 
     await this.loadSettings();
 
+
     if (this.settings && this.settings.commands) {
       // The function that triggers each time 'command' is executed
-      // Probably there many clean ways to gather this info
 
       const buildHandler = (command: Command, commandView: CommandView) => {
         return async () => {
@@ -69,6 +69,7 @@ export default class PythonLabPlugin extends Plugin {
             vaultPath: this.getVaultPath(),
           };
           const activeView = this.app.workspace.activeLeaf.view;
+
           if (activeView instanceof MarkdownView) {
             const editor = activeView.sourceMode.cmEditor;
             let selectedText = editor.getSelection();
@@ -78,16 +79,13 @@ export default class PythonLabPlugin extends Plugin {
             if (activeView.file && activeView.file.path) {
               parameters.notePath = activeView.file.path;
             }
-            if (command.modelId) {
-              parameters.variant = command.modelId;
-            }
           }
 
           let requestBody = JSON.stringify(parameters);
           if (command.debug == 'verbose') {
             console.info('requestBody', requestBody);
           }
-          
+
           fetch(command.url, {
             method: 'POST',
             body: requestBody,
@@ -106,14 +104,24 @@ export default class PythonLabPlugin extends Plugin {
                 console.error(data);
                 new Notification(data.message);
               } else {
-                data.label = command.name;
-                commandView.setData(data);
-                commandView.redraw();
+                if (commandView) {
+                  // Update the state of the view panel
+                  data.label = command.name;
+                  commandView.setData(data);
+                  commandView.redraw();
+                } else if (command.userInterface == 'replace-or-insert') {
+                  // Replaces the current selection
+                  const activeView = this.app.workspace.activeLeaf.view;
+                  if (activeView instanceof MarkdownView) {
+                    const editor = activeView.sourceMode.cmEditor;
+                    editor.replaceSelection(data.contents);
+                  }
+                }
               }
             })
             .catch(function (error) {
               console.error(error);
-              new Notice(`[${command.name}]. ${error.message}, is the server up?`);            
+              new Notice(`[${command.name}]. ${error.message}`);
             });
         };
       };
@@ -122,13 +130,12 @@ export default class PythonLabPlugin extends Plugin {
         if (command.debug == 'verbose') {
           console.log(`registering [${command.name}] as [${command.type}]`);
         }
+        let commandId: string = this.buildCommandId(index);
 
         if (
           command.userInterface == 'panel-left' ||
           command.userInterface == 'panel-right'
         ) {
-          let commandId: string = this.buildCommandId(index);
-
           this.registerView(commandId, (leaf) => {
             let commandView = new ResultListView(leaf, commandId, command.name);
 
@@ -137,7 +144,7 @@ export default class PythonLabPlugin extends Plugin {
             this.addCommand({
               id: commandId,
               name: command.name,
-              callback: () => handleCall,
+              callback: () => handleCall(),
               hotkeys: [],
             });
 
@@ -148,7 +155,13 @@ export default class PythonLabPlugin extends Plugin {
             return commandView;
           });
         } else if (command.userInterface == 'replace-or-insert') {
-          throw Error('to implement');
+          const handleCall = buildHandler(command, undefined);
+          this.addCommand({
+            id: commandId,
+            name: command.name,
+            callback: () => handleCall(),
+            hotkeys: [],
+          });
         }
       });
     } else {
