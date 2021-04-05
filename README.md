@@ -27,8 +27,6 @@ This will build a main file. Activate the plugin.
 Run the [server](./examples/server.py)
 
 
-
-
 ## Stage 1: Get similar notes to the current one.
 
 * [X] Run command POC.

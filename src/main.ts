@@ -16,7 +16,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
     commands: [
       {
         name: 'Random score similarity',
-        url: 'http://localhost:5000/random',
+        url: 'http://localhost:5000/scripts/random',
         type: 'collection',
         invokeOnFocus: true,
         addHotkey: false,
@@ -25,7 +25,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
       },
       {
         name: 'Text test',
-        url: 'http://localhost:5000/text',
+        url: 'http://localhost:5000/scripts/text',
         type: 'text',
         invokeOnFocus: true,
         addHotkey: false,
@@ -87,6 +87,7 @@ export default class PythonLabPlugin extends Plugin {
           if (command.debug == 'verbose') {
             console.info('requestBody', requestBody);
           }
+          
           fetch(command.url, {
             method: 'POST',
             body: requestBody,
@@ -111,8 +112,8 @@ export default class PythonLabPlugin extends Plugin {
               }
             })
             .catch(function (error) {
-              new Notice(error);
               console.error(error);
+              new Notice(`[${command.name}]. ${error.message}, is the server up?`);            
             });
         };
       };
