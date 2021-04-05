@@ -143,23 +143,28 @@ The plugin calls the script when opening a notes
 
 # Developer log
 
-## Apr 1: Get similar notes to the current one.
+## Mar 28: Get similar notes to the current one.
 
-- [x] Run command POC.
-- [x] Multiple experiments and tabs.
-- [x] Show a list of results.
-- [x] Show result info on hover.
+- [X] Proof of concept
+- [X] Run commands directly
 - [x] Python example.
 - [x] Javascript example.
 
-## Apr 5: Something more usable
+## Apr 1: Multiple experiments
+
+- [x] Multiple experiments
+- [X] Text panel
+- [X] Result list panel
+- [X] Experiment commands
+
+## Apr 5: HTTP Calls
 
 - [x] HTTP calls
 - [X] Python plugin system
 - [X] Add text handler
+- [X] Readme
 
 ## TODO
 
 - [ ] Add graph clustering handler
 - [ ] Add lists, to be pasted as text
-
