@@ -143,7 +143,7 @@ The plugin calls the script when opening a notes
 
 # Developer log
 
-## Mar 28: Get similar notes to the current one.
+## Mar 28: POC, Get similar notes to the current one.
 
 - [X] Proof of concept
 - [X] Run commands directly
