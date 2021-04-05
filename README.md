@@ -10,7 +10,7 @@ Say you have a terrific script that:
 - Translate a text
 - Whatever wonder you have under the sleeve :D
 
-Then you can use this plugin to experiment with it inside Obsidian.
+Then you can use this plugin to see if it's helpful in Obsidian.
 
 Why this plugin? Why not program all in Javascript?
 
@@ -78,41 +78,56 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 ## Config
 
-Right now is done with a json file, where you can register the scripts, using their URL.
+Right now is done with a JSON file, where you can register the scripts using their URL.
 
 ```json
 {
-    commands: [
-      {
-        name: 'Hello world',
-        url: 'http://localhost:5000/scripts/hello_world',
-        type: 'text',
-        invokeOnFocus: false,
-        addHotkey: true,
-        debug: 'verbose',
-        userInterface: 'insert-text',
-      },
-      {
-        name: 'Convert to upper case',
-        url: 'http://localhost:5000/scripts/to_upper_case',
-        type: 'text',
-        invokeOnFocus: false,
-        addHotkey: true,
-        debug: 'verbose',
-        userInterface: 'replace-text',
-      },
-      {
-        name: 'Random score similarity',
-        url: 'http://localhost:5000/scripts/random',
-        type: 'collection',
-        invokeOnFocus: true,
-        addHotkey: false,
-        debug: 'verbose',
-        userInterface: 'panel-right',
-      },
-    ],
-  }
+  "commands": [
+    {
+      "name": "Hello world",
+      "url": "http://localhost:5000/scripts/hello_world",
+      "type": "text",
+      "invokeOnFocus": false,
+      "addHotkey": true,
+      "debug": "verbose",
+      "userInterface": "insert-text"
+    },
+    {
+      "name": "Convert to upper case",
+      "url": "http://localhost:5000/scripts/to_upper_case",
+      "type": "text",
+      "invokeOnFocus": false,
+      "addHotkey": true,
+      "debug": "verbose",
+      "userInterface": "replace-text"
+    },
+    {
+      "name": "Random score similarity",
+      "url": "http://localhost:5000/scripts/random",
+      "type": "collection",
+      "invokeOnFocus": true,
+      "addHotkey": false,
+      "debug": "verbose",
+      "userInterface": "panel-right"
+    }
+  ]
+}
 ```
+
+All of them are required :D 
+
+*name*: The name of the command used in commands and widgets
+*url*: The address of the command in the python server
+*type*: can be 'text', 'collection' or ['graph' to be implemented]
+*invokeOnFocus*: The plugin calls the script when opening a notes
+*addHotKey*: A command is added to call the script
+*debug*: verbose or off
+*userInterface*: how the user interacts with the script, currently can be:
+* 'panel-left': Attaches a panel on the left 
+* 'panel-right': Attaches a panel on the right
+* 'replace-text': Replaces the selected text with the response
+* 'insert-text': Inserts text in the cursor position
+
 
 # Developer log
 
