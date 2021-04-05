@@ -93,7 +93,7 @@ export default class PythonLabPlugin extends Plugin {
           if (command.debug == 'verbose') {
             console.info('requestBody', requestBody);
           }
-
+          
           fetch(command.url, {
             method: 'POST',
             body: requestBody,
@@ -121,12 +121,15 @@ export default class PythonLabPlugin extends Plugin {
                   // Replaces the current selection
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
+                    // TODO probably lists should be rendered as markdown lists
                     editor.replaceSelection(data.contents);
                   }
                 } else if (command.userInterface == 'insert-text') {
+                  // Insert content in the cursor position
                   const activeView = this.app.workspace.activeLeaf.view;
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
+                    // TODO probably lists should be rendered as markdown lists
                     editor.replaceSelection(data.contents, 'start');
                   }
                 }

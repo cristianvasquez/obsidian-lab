@@ -114,19 +114,31 @@ Right now is done with a JSON file, where you can register the scripts using the
 }
 ```
 
-All of them are required :D 
+### name
 
-*name*: The name of the command used in commands and widgets
-*url*: The address of the command in the python server
-*type*: can be 'text', 'collection' or ['graph' to be implemented]
-*invokeOnFocus*: The plugin calls the script when opening a notes
-*addHotKey*: A command is added to call the script
-*debug*: verbose or off
-*userInterface*: how the user interacts with the script, currently can be:
-* 'panel-left': Attaches a panel on the left 
-* 'panel-right': Attaches a panel on the right
-* 'replace-text': Replaces the selected text with the response
-* 'insert-text': Inserts text in the cursor position
+The name of the command used in commands and widgets
+
+### url
+
+The address of the command in the python server
+
+### type
+
+What returns the script?
+
+Can be 'text', 'collection' or ['graph' to be implemented]
+
+### invokeOnFocus
+
+The plugin calls the script when opening a notes
+
+* *addHotKey*: A command is added to call the script
+* *debug*: verbose or off
+* *userInterface*: how the user interacts with the script, currently can be:
+  * 'panel-left': Attaches a panel on the left 
+  * 'panel-right': Attaches a panel on the right
+  * 'replace-text': Replaces the selected text with the response
+  * 'insert-text': Inserts text in the cursor position
 
 
 # Developer log
@@ -149,4 +161,5 @@ All of them are required :D
 ## TODO
 
 - [ ] Add graph clustering handler
+- [ ] Add lists, to be pasted as text
 
