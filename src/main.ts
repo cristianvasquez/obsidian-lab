@@ -15,6 +15,15 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
   return {
     commands: [
       {
+        name: 'Hello world',
+        url: 'http://localhost:5000/scripts/hello_world',
+        type: 'text',
+        invokeOnFocus: true,
+        addHotkey: true,
+        debug: 'verbose',
+        userInterface: 'panel-right',
+      },
+      {
         name: 'Random score similarity',
         url: 'http://localhost:5000/scripts/random',
         type: 'collection',
