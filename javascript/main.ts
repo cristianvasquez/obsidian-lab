@@ -18,10 +18,19 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         name: 'Hello world',
         url: 'http://localhost:5000/scripts/hello_world',
         type: 'text',
-        invokeOnFocus: true,
+        invokeOnFocus: false,
         addHotkey: true,
         debug: 'verbose',
-        userInterface: 'panel-right',
+        userInterface: 'insert-text',
+      },
+      {
+        name: 'Convert to upper case',
+        url: 'http://localhost:5000/scripts/to_upper_case',
+        type: 'text',
+        invokeOnFocus: false,
+        addHotkey: true,
+        debug: 'verbose',
+        userInterface: 'replace-text',
       },
       {
         name: 'Random score similarity',
@@ -32,15 +41,6 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
         debug: 'verbose',
         userInterface: 'panel-right',
       },
-      {
-        name: 'Replace text',
-        url: 'http://localhost:5000/scripts/text',
-        type: 'text',
-        invokeOnFocus: false,
-        addHotkey: true,
-        debug: 'verbose',
-        userInterface: 'replace-or-insert',
-      },
     ],
   };
 };
@@ -49,15 +49,15 @@ export default class PythonLabPlugin extends Plugin {
   public settings: Settings;
   public view: ResultListView;
 
+  private buildCommandId(index: number): string {
+    return `obsidian_lab_${index}`;
+  }
+
   public getVaultPath(): string {
     if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
       throw new Error('app.vault is not a FileSystemAdapter instance');
     }
     return this.app.vault.adapter.getBasePath();
-  }
-
-  private buildCommandId(index: number): string {
-    return `obsidian_lab_${index}`;
   }
 
   public async onload(): Promise<void> {
@@ -67,7 +67,6 @@ export default class PythonLabPlugin extends Plugin {
     addIcon('lab', labIcon);
 
     await this.loadSettings();
-
 
     if (this.settings && this.settings.commands) {
       // The function that triggers each time 'command' is executed
@@ -118,12 +117,16 @@ export default class PythonLabPlugin extends Plugin {
                   data.label = command.name;
                   commandView.setData(data);
                   commandView.redraw();
-                } else if (command.userInterface == 'replace-or-insert') {
+                } else if (command.userInterface == 'replace-text') {
                   // Replaces the current selection
-                  const activeView = this.app.workspace.activeLeaf.view;
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
                     editor.replaceSelection(data.contents);
+                  }
+                } else if (command.userInterface == 'insert-text') {
+                  if (activeView instanceof MarkdownView) {
+                    const editor = activeView.sourceMode.cmEditor;
+                    editor.replaceSelection(data.contents, 'start');
                   }
                 }
               }
@@ -163,7 +166,7 @@ export default class PythonLabPlugin extends Plugin {
 
             return commandView;
           });
-        } else if (command.userInterface == 'replace-or-insert') {
+        } else if (command.userInterface == 'replace-text'||command.userInterface == 'insert-text') {
           const handleCall = buildHandler(command, undefined);
           this.addCommand({
             id: commandId,
@@ -248,10 +251,6 @@ class PythonLabSettings extends PluginSettingTab {
     containerEl.empty();
     containerEl.createEl('h2', { text: 'Registered commands' });
 
-    const div = containerEl.createEl('div', {
-      cls: 'python-lab-text',
-    });
-
     new Setting(containerEl)
       .setName('Commands')
       .setDesc('config for each command')
@@ -278,10 +277,14 @@ class PythonLabSettings extends PluginSettingTab {
         text.inputEl.cols = 120;
       });
 
-    const footerText = document.createElement('p');
-    footerText.appendText('Restart after making changes.<br/>');
-    footerText.appendText('Pull requests are both welcome and appreciated. :)');
-    div.appendChild(footerText);
+    const div = containerEl.createEl('div', {
+      cls: 'python-lab-text',
+    });
+
+    containerEl.createEl('p', { text: 'Restart after making changes.' });
+    containerEl.createEl('p', {
+      text: 'Pull requests are both welcome and appreciated. :)',
+    });
   }
 }
 

@@ -3,7 +3,7 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: './src/main.ts',
+  input: './javascript/main.ts',
   output: {
     dir: '.',
     sourcemap: 'inline',

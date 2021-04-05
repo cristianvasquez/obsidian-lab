@@ -1,6 +1,39 @@
-# Obsidian lab POC
+# Obsidian lab
 
-Wants to be: an easy way to experiment with distinct algorithms.
+
+
+Python is cool
+
+
+A minimal interface that uses python scripts.
+the scripts can provide functionality such as:
+
+* Find similar notes to the current one
+* Find clusters of notes
+* Translate a text
+* Wathever you  imagine :D
+
+
+
+It consists of two parts:
+
+1. An obsidian plugin, that provides commands and 
+
+
+
+
+
+
+
+
+A minimal interface to use python scripts.
+
+Functionality that can be provided using python scripts:
+
+
+It consists of two parts: 
+
+1. The plugin, that provides a pane with the
 
 ## Installation
 

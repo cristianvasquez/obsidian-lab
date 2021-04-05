@@ -1,9 +1,15 @@
-import importlib, scripts
+import importlib
 import pkgutil
+import scripts
+import socket
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_json_schema import JsonSchema, JsonValidationError
+
+
+PORT=5000
+HOST='127.0.0.1'
 
 app = Flask(__name__)
 validator = JsonSchema(app)
@@ -39,29 +45,12 @@ def validation_error(e):
     }
     return jsonify(error)
 
-
-@app.route('/<path:script_path>', methods=['POST'])
-@validator.validate(input_schema)
-def execute_script(script_path):
-
-    vault_path = request.json['vaultPath'] if 'vaultPath' in request.json else None
-    note_path = request.json['notePath'] if 'notePath' in request.json else None
-    text = request.json['text'] if 'text' in request.json else None
-
-    module_str = script_path.replace("/", ".")
-    module = importlib.import_module(module_str)
-    plugin = module.Plugin(vault_path=vault_path)
-
-    return plugin.execute(note_path, text)
-
-
 def iter_namespace(ns_pkg):
     # Specifying the second argument (prefix) to iter_modules makes the
     # returned name an absolute name instead of a relative one. This allows
     # import_module to work without having to do additional modification to
     # the name.
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
-
 
 scripts = {
     name: importlib.import_module(name)
@@ -70,11 +59,39 @@ scripts = {
     if name.startswith('scripts')
 }
 
+'''Returns the status of the app'''
+@app.route('/', methods=['GET'])
+def root():
+
+    def host(script):
+        return  f'http://{HOST}:{PORT}/{script.replace(".", "/")}' 
+
+    return  {
+        'scripts':   [host(x) for x in scripts.keys()]
+    }
+
+
+'''Invokes a plugin'''
+@app.route('/<path:script_path>', methods=['POST'])
+@validator.validate(input_schema)
+def execute_script(script_path):
+
+    vault_path = request.json['vaultPath'] if 'vaultPath' in request.json else None
+    note_path = request.json['notePath'] if 'notePath' in request.json else None
+    text = request.json['text'] if 'text' in request.json else None
+
+    try:
+        module_str = script_path.replace("/", ".")
+        module = importlib.import_module(module_str)
+        plugin = module.Plugin(vault_path=vault_path)
+    except ModuleNotFoundError as e:
+        return  {
+            'message': e.message,
+            'status': 500,
+            'errors': [e.message]
+        }
+
+    return plugin.execute(note_path, text)
+
 if __name__ == '__main__':
-
-    print(scripts)
-    for i, module in scripts.items():
-        plugin = module.Plugin('vault')
-        # plugin.execute('var')
-
-    app.run()
+    app.run(port=PORT,host=HOST)

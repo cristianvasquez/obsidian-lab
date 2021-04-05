@@ -6,7 +6,7 @@ interface Command {
   name: string;
   url: string;
   type: 'collection' | 'text' | 'graph';
-  userInterface: 'panel-left' | 'panel-right' | 'replace-or-insert';
+  userInterface: 'panel-left' | 'panel-right' | 'replace-text' | 'insert-text';
   invokeOnFocus: boolean,
   addHotkey: boolean,
   debug: 'verbose' | 'off';
