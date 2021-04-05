@@ -124,6 +124,7 @@ export default class PythonLabPlugin extends Plugin {
                     editor.replaceSelection(data.contents);
                   }
                 } else if (command.userInterface == 'insert-text') {
+                  const activeView = this.app.workspace.activeLeaf.view;
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
                     editor.replaceSelection(data.contents, 'start');

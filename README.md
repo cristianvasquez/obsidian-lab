@@ -1,77 +1,137 @@
 # Obsidian lab
 
 
+This plugin allows binding scripts to commands and widgets in Obsidian. 
 
-Python is cool
+Say you have a terrific script that:
+
+- Find similar notes to the current one
+- Find clusters of notes
+- Translate a text
+- Whatever wonder you have under the sleeve :D
+
+Then you can use this plugin to experiment with it inside Obsidian.
+
+Why this plugin? Why not program all in Javascript?
+
+Unfortunately, the browser language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
+Sometimes, it is quicker to experiment in Python and later, depending on the results, make it work in Javascript.
+
+## How it works?
+
+It has two parts,
+
+1. a Python server that exposes the scripts through a mini web app. 
+2. an Obsidian plugin that calls the web app and shows results in Obsidian
+
+## Setup of the python part
+
+Install the dependencies,
+
+```sh
+pip install flask
+```
+
+Run the python server
+
+```
+python ./python/app.py
+```
+
+If all goes ok, it will provide an endpoint that lists all the exposed scripts.
+
+> http://127.0.0.1:5000/
 
 
-A minimal interface that uses python scripts.
-the scripts can provide functionality such as:
+```json
+{
+  "scripts": [
+    "http://127.0.0.1:5000/scripts/hello_world",
+    "http://127.0.0.1:5000/scripts/random",
+    "http://127.0.0.1:5000/scripts/to_upper_case"
+  ]
+}
+```
 
-* Find similar notes to the current one
-* Find clusters of notes
-* Translate a text
-* Wathever you  imagine :D
+To add new scripts, copy them in the ./python/scripts directory.
 
+## Build the Obsidian plugin
 
+is built like all the others,
 
-It consists of two parts:
-
-1. An obsidian plugin, that provides commands and 
-
-
-
-
-
-
-
-
-A minimal interface to use python scripts.
-
-Functionality that can be provided using python scripts:
-
-
-It consists of two parts: 
-
-1. The plugin, that provides a pane with the
-
-## Installation
-
-Clone this into
+Clone this repo into
 
 /{vault}/.obsidian/plugins
 
-Install dependencies
+Install the dependencies
 
 ```
 yarn install
 ```
-
 build the app
 
 ```
 yarn build
 ```
 
-This will build a main file. Activate the plugin. 
+This will build the main file; that Obsidian should detect. Activate the plugin from inside Obsidian, in community plugins
 
-----
+## Config
 
-Run the [server](./examples/server.py)
+Right now is done with a json file, where you can register the scripts, using their URL.
 
+```json
+{
+    commands: [
+      {
+        name: 'Hello world',
+        url: 'http://localhost:5000/scripts/hello_world',
+        type: 'text',
+        invokeOnFocus: false,
+        addHotkey: true,
+        debug: 'verbose',
+        userInterface: 'insert-text',
+      },
+      {
+        name: 'Convert to upper case',
+        url: 'http://localhost:5000/scripts/to_upper_case',
+        type: 'text',
+        invokeOnFocus: false,
+        addHotkey: true,
+        debug: 'verbose',
+        userInterface: 'replace-text',
+      },
+      {
+        name: 'Random score similarity',
+        url: 'http://localhost:5000/scripts/random',
+        type: 'collection',
+        invokeOnFocus: true,
+        addHotkey: false,
+        debug: 'verbose',
+        userInterface: 'panel-right',
+      },
+    ],
+  }
+```
 
-## Stage 1: Get similar notes to the current one.
+# Developer log
 
-* [X] Run command POC.
-* [X] Multiple experiments and tabs.
-* [X] Show a list of results.
-* [X] Show result info on hover.
-* [X] Python example.
-* [X] Javascript example.
+## Apr 1: Get similar notes to the current one.
 
-## Stage 2: Something usable
+- [x] Run command POC.
+- [x] Multiple experiments and tabs.
+- [x] Show a list of results.
+- [x] Show result info on hover.
+- [x] Python example.
+- [x] Javascript example.
 
-* [X] HTTP calls
-* [ ] Python plugin system 
-* [ ] Add text handler
-* [ ] Add graph clustering handler
+## Apr 5: Something more usable
+
+- [x] HTTP calls
+- [X] Python plugin system
+- [X] Add text handler
+
+## TODO
+
+- [ ] Add graph clustering handler
+
