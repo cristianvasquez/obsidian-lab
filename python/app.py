@@ -8,23 +8,34 @@ from flask_cors import CORS
 from flask_json_schema import JsonSchema, JsonValidationError
 
 
+####################################################################################
+# config
+####################################################################################
 PORT=5000
 HOST='127.0.0.1'
+SCRIPTS_FOLDER='scripts'
 
 app = Flask(__name__)
-validator = JsonSchema(app)
 
+####################################################################################
+# Cors
+####################################################################################
 # Allows access to fetch at 'http://localhost:5000/' from origin 'app://obsidian.md'
 obsidian_origin = "app://obsidian.md"
 cors = CORS(app, origins=obsidian_origin)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+
+####################################################################################
+# Schema
+####################################################################################
 # Input schema example:
 # {
 #   vaultPath: "/home/cvasquez/obsidian/development", 
 #   notePath: "snippets-plugin/Test1.md"
 #   text: "Some selected text", 
 # }
+validator = JsonSchema(app)
 input_schema = {
     'required': ['vaultPath'],
     'properties': {
@@ -34,7 +45,6 @@ input_schema = {
         'script': {'type': 'string'},
     }
 }
-
 
 @app.errorhandler(JsonValidationError)
 def validation_error(e):
@@ -56,10 +66,13 @@ scripts = {
     name: importlib.import_module(name)
     for finder, name, ispkg
     in iter_namespace(scripts)
-    if name.startswith('scripts')
+    if name.startswith(SCRIPTS_FOLDER)
 }
 
-'''Returns the status of the app'''
+####################################################################################
+# Routers
+####################################################################################
+'''Return a list of all detected plugins'''
 @app.route('/', methods=['GET'])
 def root():
 
@@ -71,7 +84,19 @@ def root():
     }
 
 
-'''Invokes a plugin'''
+'''Exposes a script present in the scripts folder
+
+The url corresponds to the path to the file, without the 'py' part.
+
+For example, if there is a script:
+
+./scripts/hello_world.py, 
+
+It will be exposed in without the py part at:
+
+http://{HOST}:{PORT}/{SCRIPTS_FOLDER}/hello_world
+
+'''
 @app.route('/<path:script_path>', methods=['POST'])
 @validator.validate(input_schema)
 def execute_script(script_path):
@@ -93,5 +118,8 @@ def execute_script(script_path):
 
     return plugin.execute(note_path, text)
 
+####################################################################################
+# Main
+####################################################################################
 if __name__ == '__main__':
     app.run(port=PORT,host=HOST)
