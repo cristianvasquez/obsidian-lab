@@ -16,7 +16,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
     commands: [
       {
         name: 'Hello world',
-        url: 'http://localhost:5000/scripts/hello_world',
+        url: 'http://localhost:5000/hello_world',
         type: 'text',
         invokeOnFocus: false,
         addHotkey: true,
@@ -25,7 +25,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
       },
       {
         name: 'Convert to upper case',
-        url: 'http://localhost:5000/scripts/to_upper_case',
+        url: 'http://localhost:5000/to_upper_case',
         type: 'text',
         invokeOnFocus: false,
         addHotkey: true,
@@ -34,7 +34,7 @@ const getDefaultSettings = function (currentVaultPath: string): Settings {
       },
       {
         name: 'Random score similarity',
-        url: 'http://localhost:5000/scripts/random',
+        url: 'http://localhost:5000/random',
         type: 'collection',
         invokeOnFocus: true,
         addHotkey: false,

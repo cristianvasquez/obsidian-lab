@@ -25,7 +25,19 @@ This repo contains two things:
 
 ## Python server
 
-List of all the available scripts:
+To run the python server just do:
+
+```sh
+python ./app.py <scripts directory>
+```
+
+example:
+
+```sh
+python ./app.py ./examples
+```
+
+After running, you can list all the available scripts:
 
 > GET: http://127.0.0.1:5000/
 
@@ -39,10 +51,7 @@ List of all the available scripts:
 }
 ```
 
-To add new scripts, copy them in the './python/scripts' directory.
-
-For example, if you create `./python/scripts/hello.py`,
-The app exposes it in `http://127.0.0.1:5000/scripts/hello.py`
+To add new scripts, copy them in the scripts directory.
 
 ## Plugin
 
@@ -89,7 +98,7 @@ Configuring the plugin currently is done with a JSON file, where you specify wha
   "commands": [
     {
       "name": "Hello world",
-      "url": "http://localhost:5000/scripts/hello_world",
+      "url": "http://localhost:5000/hello_world",
       "type": "text",
       "invokeOnFocus": false,
       "addHotkey": true,
@@ -98,7 +107,7 @@ Configuring the plugin currently is done with a JSON file, where you specify wha
     },
     {
       "name": "Convert to upper case",
-      "url": "http://localhost:5000/scripts/to_upper_case",
+      "url": "http://localhost:5000/to_upper_case",
       "type": "text",
       "invokeOnFocus": false,
       "addHotkey": true,
@@ -107,7 +116,7 @@ Configuring the plugin currently is done with a JSON file, where you specify wha
     },
     {
       "name": "Random score similarity",
-      "url": "http://localhost:5000/scripts/random",
+      "url": "http://localhost:5000/random",
       "type": "collection",
       "invokeOnFocus": true,
       "addHotkey": false,
@@ -205,7 +214,12 @@ python ./python/app.py
 - [x] Add text handler
 - [x] Readme
 
+## Apr 6: Command line
+
+- [X] Parametrized python server
+
 ## TODO
 
 - [ ] Add graph clustering handler
 - [ ] Lists can be pasted in the editor as lists
+- [ ] Separate into a python command line

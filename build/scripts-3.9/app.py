@@ -1,13 +1,11 @@
 import importlib
 import pkgutil
-import socket
-import scripts
-from setuptools import find_packages
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_json_schema import JsonSchema, JsonValidationError
 
+import scripts
 
 ####################################################################################
 # config
@@ -119,8 +117,12 @@ def execute_script(script_path):
 
     return plugin.execute(note_path, text)
 
+
+
 ####################################################################################
 # Main
 ####################################################################################
 if __name__ == '__main__':
-    app.run(port=PORT,host=HOST)    
+    app.run(port=PORT,host=HOST)
+
+

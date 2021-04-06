@@ -1,5 +1,6 @@
 import os
 
+
 class Plugin:
     def __init__(self, *args, **kwargs):
         super()
@@ -7,5 +8,7 @@ class Plugin:
 
     def execute(self, note_path, text):
         return {
-           'contents': f'Hello from {self.plugin_name}'
+            'contents': f'Hello from {self.plugin_name}'
         }
+
+hello = 'hola chuchetumare'
