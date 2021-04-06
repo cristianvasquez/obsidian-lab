@@ -4,23 +4,23 @@ Say you have a terrific script to:
 
 - Find similar notes to the current one.
 - Translate a text.
-- Know what was your mood the last 3 months, just reading your Obsidian vault.
+- Know what was your mood the last three months, just reading your Obsidian vault.
 - Whatever wonder you have under the sleeve :D
 
-And you want to see if it's useful in Obsidian, without having to write a plugin.
+And you want to see if it's helpful in Obsidian without having to write a plugin.
 
 That is the purpose of this plugin!
 
 ## Why this plugin? Why not program all in Javascript?
 
-Unfortunately, the omnipresent web-language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
+Unfortunately, the universal web language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
 Sometimes, it is quicker to experiment in Python and later, depending on the results, make it work in Javascript.
 
 ## How it works?
 
-This repo cointains two things:
+This repo contains two things:
 
-1. a Python server that exposes the scripts through a mini web app. ( this could be implemented using javascript, rust or watever )
+1. a Python server that exposes the scripts through a mini web app. (perhaps someone wants to do one using javascript, rust, or whatever? )
 2. an Obsidian plugin that calls the web app and shows results in Obsidian
 
 ## Python server
@@ -39,15 +39,17 @@ List of all the available scripts:
 }
 ```
 
-To add new scripts, just copy them in the './python/scripts' directory.
-The directory structure will be reflected in the url.
+To add new scripts, copy them in the './python/scripts' directory.
+The app will expose an URL that reflects the directory structure.
 
 For example, if you create `./python/scripts/greetings/hello.py`,
-it will be exposed in `http://127.0.0.1:5000/scripts/greetings/hello.py`
+The app exposes it in `http://127.0.0.1:5000/scripts/greetings/hello.py`
 
 ## Plugin
 
-The plugin now can call the scripts using POST.
+Normal flow,
+
+The plugin calls the scripts using POST.
 
 > POST: http://127.0.0.1:5000/scripts/some_list
 
@@ -57,6 +59,7 @@ The plugin now can call the scripts using POST.
   "notePath": "snippets-plugin/Test1.md"
 }
 ```
+And gets a JSON response
 
 > Response
 
@@ -74,14 +77,13 @@ The plugin now can call the scripts using POST.
   ]
 }
 ```
-
-And an Obsidian panel is updated with the results
+The plugin updates a panel with the JSON response.
 
 ![Text](./docs/example.png)
 
 ## Config
 
-Configuring the plugin currently is done with a JSON file, where you specify their URL and how is triggered, how is shown etc.
+Configuring the plugin currently is done with a JSON file, where you specify what is triggered, how is it shown, etc...
 
 ```json
 {
@@ -140,8 +142,8 @@ The plugin calls the script when opening a notes
 - _userInterface_: how the user interacts with the script, currently can be:
   - 'panel-left': Attaches a panel on the left
   - 'panel-right': Attaches a panel on the right
-  - 'replace-text': Replaces the selected text with the response
-  - 'insert-text': Inserts text in the cursor position
+  - 'replace-text': Replaces the selected text with the response (example: translate a paragraph)
+  - 'insert-text': Inserts text in the cursor position (example: insert table of contents)
 
 ## Installation
 
@@ -207,4 +209,4 @@ python ./python/app.py
 ## TODO
 
 - [ ] Add graph clustering handler
-- [ ] Add lists, to be pasted as text
+- [ ] Lists can be pasted in the editor as lists
