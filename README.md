@@ -40,10 +40,9 @@ List of all the available scripts:
 ```
 
 To add new scripts, copy them in the './python/scripts' directory.
-The app will expose an URL that reflects the directory structure.
 
-For example, if you create `./python/scripts/greetings/hello.py`,
-The app exposes it in `http://127.0.0.1:5000/scripts/greetings/hello.py`
+For example, if you create `./python/scripts/hello.py`,
+The app exposes it in `http://127.0.0.1:5000/scripts/hello.py`
 
 ## Plugin
 

@@ -1,7 +1,8 @@
 import importlib
 import pkgutil
-import scripts
 import socket
+import scripts
+from setuptools import find_packages
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -62,11 +63,11 @@ def iter_namespace(ns_pkg):
     # the name.
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
 
-scripts = {
+detected = {
     name: importlib.import_module(name)
     for finder, name, ispkg
     in iter_namespace(scripts)
-    if name.startswith(SCRIPTS_FOLDER)
+    # if name.startswith(SCRIPTS_FOLDER)
 }
 
 ####################################################################################
@@ -80,7 +81,7 @@ def root():
         return  f'http://{HOST}:{PORT}/{script.replace(".", "/")}' 
 
     return  {
-        'scripts':   [host(x) for x in scripts.keys()]
+        'scripts':   [host(x) for x in detected.keys()]
     }
 
 
@@ -122,4 +123,4 @@ def execute_script(script_path):
 # Main
 ####################################################################################
 if __name__ == '__main__':
-    app.run(port=PORT,host=HOST)
+    app.run(port=PORT,host=HOST)    
