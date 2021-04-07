@@ -178,6 +178,8 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 ## TODO
 
+- [ ] Add a warning, when exposed scripts are not the same as the config.
+      This could be a button in the config that checks if the endpoints are there
 - [ ] Add graph clustering handler
 - [ ] Lists can be pasted in the editor as lists
 - [ ] Separate into a python command line
