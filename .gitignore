@@ -1,7 +1,8 @@
-# Intellij
+# ide
 *.iml
 .idea
 __pycache__
+.vscode
 
 # npm
 node_modules

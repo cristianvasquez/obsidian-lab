@@ -7,7 +7,6 @@ import {
   FileSystemAdapter,
   Notice,
   MarkdownView,
-  View,
 } from 'obsidian';
 import { ResultListView } from './panel';
 
@@ -112,12 +111,7 @@ export default class PythonLabPlugin extends Plugin {
                 console.error(data);
                 new Notification(data.message);
               } else {
-                if (commandView) {
-                  // Update the state of the view panel
-                  data.label = command.name;
-                  commandView.setData(data);
-                  commandView.redraw();
-                } else if (command.userInterface == 'replace-text') {
+                if (command.userInterface == 'replace-text') {
                   // Replaces the current selection
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
@@ -126,12 +120,16 @@ export default class PythonLabPlugin extends Plugin {
                   }
                 } else if (command.userInterface == 'insert-text') {
                   // Insert content in the cursor position
-                  const activeView = this.app.workspace.activeLeaf.view;
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
                     // TODO probably lists should be rendered as markdown lists
                     editor.replaceSelection(data.contents, 'start');
                   }
+                } else if (commandView) {
+                  // Update the state of the view panel
+                  data.label = command.name;
+                  commandView.setData(data);
+                  commandView.redraw();
                 }
               }
             })
