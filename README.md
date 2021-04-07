@@ -1,4 +1,4 @@
-# Obsidian lab
+# Obsidian lab plugin
 
 Say you have a terrific script to:
 
@@ -20,7 +20,9 @@ Sometimes, it is quicker to experiment in, for example, Python, and later, if yo
 
 ## Requirement
 
-Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) (perhaps someone else wants to do one using javascript, rust, or whatever? )
+Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes python scripts.
+
+Perhaps someone else wants to do one using javascript, rust, or whatever? :D
 
 ## How it works?
 
