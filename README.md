@@ -9,55 +9,22 @@ Say you have a terrific script to:
 
 And you want to see if it's helpful in Obsidian without having to write a plugin.
 
-That is the purpose of this plugin!
+That is the purpose of this plugin!. 
+
+It's a plugin that calls a web app that executes the script, and then the results are shown in Obsidian
 
 ## Why this plugin? Why not program all in Javascript?
 
 Unfortunately, the universal web language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
-Sometimes, it is quicker to experiment in Python and later, depending on the results, make it work in Javascript.
+Sometimes, it is quicker to experiment in, for example, Python, and later, if you want, make it work in Javascript.
+
+## Requirement
+
+Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) (perhaps someone else wants to do one using javascript, rust, or whatever? )
 
 ## How it works?
 
-This repo contains two things:
-
-1. a Python server that exposes the scripts through a mini web app. (perhaps someone wants to do one using javascript, rust, or whatever? )
-2. an Obsidian plugin that calls the web app and shows results in Obsidian
-
-## Python server
-
-To run the python server just do:
-
-```sh
-python ./app.py <scripts directory>
-```
-
-example:
-
-```sh
-python ./app.py ./examples
-```
-
-After running, you can list all the available scripts:
-
-> GET: http://127.0.0.1:5000/
-
-```json
-{
-  "scripts": [
-    "http://127.0.0.1:5000/scripts/hello_world",
-    "http://127.0.0.1:5000/scripts/random",
-    "http://127.0.0.1:5000/scripts/to_upper_case"
-  ]
-}
-```
-
-To add new scripts, copy them in the scripts directory.
-
-## Plugin
-
-Normal flow,
-
-The plugin calls the scripts using POST.
+1. The plugin makes a call using POST.
 
 > POST: http://127.0.0.1:5000/scripts/some_list
 
@@ -85,7 +52,8 @@ And gets a JSON response
   ]
 }
 ```
-The plugin updates a panel with the JSON response.
+
+2. The plugin the UI with the JSON response.
 
 ![Text](./docs/example.png)
 
@@ -143,7 +111,7 @@ Can be 'text', 'collection' or ['graph' to be implemented]
 
 ### invokeOnFocus
 
-The plugin calls the script when opening a notes
+The plugin calls the script when opening a note.
 
 - _addHotKey_: A command is added to call the script
 - _debug_: verbose or off
@@ -151,11 +119,9 @@ The plugin calls the script when opening a notes
   - 'panel-left': Attaches a panel on the left
   - 'panel-right': Attaches a panel on the right
   - 'replace-text': Replaces the selected text with the response (example: translate a paragraph)
-  - 'insert-text': Inserts text in the cursor position (example: insert table of contents)
+  - 'insert-text': Inserts text in the cursor position (example: insert a table of contents)
 
-## Installation
-
-### The javascript part
+## Build
 
 is built like all the other plugins,
 
@@ -176,20 +142,6 @@ yarn build
 ```
 
 This will build the main file; that Obsidian should detect. Activate the plugin from inside Obsidian, in community plugins
-
-### The python part
-
-1. Install the dependencies,
-
-```sh
-pip install flask
-```
-
-2. Run the python server
-
-```
-python ./python/app.py
-```
 
 # Developer log
 
@@ -217,6 +169,10 @@ python ./python/app.py
 ## Apr 6: Command line
 
 - [X] Parametrized python server
+
+## Apr 7: Split in two
+
+- [X] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
 
 ## TODO
 
