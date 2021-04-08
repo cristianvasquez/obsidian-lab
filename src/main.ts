@@ -1,3 +1,4 @@
+import { copyFile } from 'fs';
 import {
   addIcon,
   App,
@@ -10,46 +11,49 @@ import {
 } from 'obsidian';
 import { ResultListView } from './panel';
 
-const getDefaultSettings = function (currentVaultPath: string): Settings {
-  return {
-    commands: [
-      {
-        name: 'Hello world',
-        url: 'http://localhost:5000/hello_world',
-        type: 'text',
-        invokeOnFocus: false,
-        addHotkey: true,
-        debug: 'verbose',
-        userInterface: 'insert-text',
-      },
-      {
-        name: 'Convert to upper case',
-        url: 'http://localhost:5000/to_upper_case',
-        type: 'text',
-        invokeOnFocus: false,
-        addHotkey: true,
-        debug: 'verbose',
-        userInterface: 'replace-text',
-      },
-      {
-        name: 'Random score similarity',
-        url: 'http://localhost:5000/random',
-        type: 'collection',
-        invokeOnFocus: true,
-        addHotkey: false,
-        debug: 'verbose',
-        userInterface: 'panel-right',
-      },
-    ],
-  };
+const DEFAULT_SETTINGS: Settings = {
+  server_url: 'http://localhost:5000',
+  debug: 'verbose',
+  commands: {
+    hello_world: {
+      label: 'Hello world',
+      type: 'text',
+      userInterface: 'insert-text',
+      active: true,
+      addHotkey: true,
+      invokeOnFocus: false,
+    },
+
+    to_upper_case: {
+      label: 'Convert to upper case',
+      type: 'text',
+      userInterface: 'replace-text',
+      active: true,
+      addHotkey: true,
+      invokeOnFocus: false,
+    },
+
+    random_similarity: {
+      label: 'Random score similarity',
+      type: 'text',
+      userInterface: 'panel-right',
+      active: true,
+      addHotkey: false,
+      invokeOnFocus: true,
+    },
+  },
 };
 
 export default class PythonLabPlugin extends Plugin {
   public settings: Settings;
   public view: ResultListView;
 
-  private buildCommandId(index: number): string {
-    return `obsidian_lab_${index}`;
+  private buildCommandId(command_name: string): string {
+    return `obsidian_lab_${command_name}`;
+  }
+
+  private buildCommandURL(command_name: string): string {
+    return `${this.settings.server_url}/${command_name}`;
   }
 
   public getVaultPath(): string {
@@ -67,10 +71,16 @@ export default class PythonLabPlugin extends Plugin {
 
     await this.loadSettings();
 
+    const debugEnabled = this.settings.debug == 'verbose';
+
     if (this.settings && this.settings.commands) {
       // The function that triggers each time 'command' is executed
 
-      const buildHandler = (command: Command, commandView: CommandView) => {
+      const buildHandler = (
+        command_url: string,
+        command: Command,
+        commandView: CommandView,
+      ) => {
         return async () => {
           let parameters: Input = {
             vaultPath: this.getVaultPath(),
@@ -89,11 +99,11 @@ export default class PythonLabPlugin extends Plugin {
           }
 
           let requestBody = JSON.stringify(parameters);
-          if (command.debug == 'verbose') {
+          if (debugEnabled) {
             console.info('requestBody', requestBody);
           }
-          
-          fetch(command.url, {
+
+          fetch(command_url, {
             method: 'POST',
             body: requestBody,
             headers: {
@@ -104,7 +114,7 @@ export default class PythonLabPlugin extends Plugin {
               return response.json();
             })
             .then(function (data) {
-              if (command.debug == 'verbose') {
+              if (debugEnabled) {
                 console.info('data', data);
               }
               if (data.errors) {
@@ -127,7 +137,7 @@ export default class PythonLabPlugin extends Plugin {
                   }
                 } else if (commandView) {
                   // Update the state of the view panel
-                  data.label = command.name;
+                  data.label = command.label;
                   commandView.setData(data);
                   commandView.redraw();
                 }
@@ -135,29 +145,36 @@ export default class PythonLabPlugin extends Plugin {
             })
             .catch(function (error) {
               console.error(error);
-              new Notice(`[${command.name}]. ${error.message}`);
+              new Notice(`[${command.label}]. ${error.message}`);
             });
         };
       };
 
-      this.settings.commands.forEach((command: Command, index: number) => {
-        if (command.debug == 'verbose') {
-          console.log(`registering [${command.name}] as [${command.type}]`);
+      for (const [k, v] of Object.entries(this.settings.commands)) {
+        let commandName = k as string;
+        let command = v as Command;
+        if (this.settings.debug == 'verbose') {
+          console.log(`registering [${commandName}] as [${command.type}]`);
         }
-        let commandId: string = this.buildCommandId(index);
+
+        let commandId: string = this.buildCommandId(commandName);
+        let commandUrl = this.buildCommandURL(commandName);
 
         if (
           command.userInterface == 'panel-left' ||
           command.userInterface == 'panel-right'
         ) {
           this.registerView(commandId, (leaf) => {
-            let commandView = new ResultListView(leaf, commandId, command.name);
-
-            const handleCall = buildHandler(command, commandView);
+            let commandView = new ResultListView(
+              leaf,
+              commandId,
+              command.label,
+            );
+            const handleCall = buildHandler(commandUrl, command, commandView);
 
             this.addCommand({
-              id: commandId,
-              name: command.name,
+              id: commandName,
+              name: command.label,
               callback: () => handleCall(),
               hotkeys: [],
             });
@@ -168,16 +185,19 @@ export default class PythonLabPlugin extends Plugin {
 
             return commandView;
           });
-        } else if (command.userInterface == 'replace-text'||command.userInterface == 'insert-text') {
-          const handleCall = buildHandler(command, undefined);
+        } else if (
+          command.userInterface == 'replace-text' ||
+          command.userInterface == 'insert-text'
+        ) {
+          const handleCall = buildHandler(commandUrl, command, undefined);
           this.addCommand({
             id: commandId,
-            name: command.name,
+            name: command.label,
             callback: () => handleCall(),
             hotkeys: [],
           });
         }
-      });
+      }
     } else {
       console.log(`settings[${this.settings}]`);
     }
@@ -191,8 +211,7 @@ export default class PythonLabPlugin extends Plugin {
   }
 
   public async loadSettings(): Promise<void> {
-    const defaultSettings = getDefaultSettings(this.getVaultPath());
-    this.settings = Object.assign(defaultSettings, await super.loadData());
+    this.settings = Object.assign(DEFAULT_SETTINGS, await super.loadData());
   }
 
   public async saveSettings() {
@@ -204,10 +223,11 @@ export default class PythonLabPlugin extends Plugin {
    */
   private readonly initView = (): void => {
     if (this.settings && this.settings.commands) {
-      this.settings.commands.forEach((command: Command, index: number) => {
-        let commandId: string = this.buildCommandId(index);
+      for (const [k, v] of Object.entries(this.settings.commands)) {
+        let commandName = k as string;
+        let command = v as Command;
+        let commandId: string = this.buildCommandId(commandName);
 
-        // If is not active
         if (!this.app.workspace.getLeavesOfType(commandId).length) {
           switch (command.userInterface) {
             case 'panel-left': {
@@ -230,7 +250,7 @@ export default class PythonLabPlugin extends Plugin {
             }
           }
         }
-      });
+      }
     }
   };
 }
@@ -258,13 +278,7 @@ class PythonLabSettings extends PluginSettingTab {
       .setDesc('config for each command')
       .addTextArea((text) => {
         text
-          .setPlaceholder(
-            JSON.stringify(
-              getDefaultSettings(this.plugin.getVaultPath()),
-              null,
-              2,
-            ),
-          )
+          .setPlaceholder(JSON.stringify(DEFAULT_SETTINGS, null, 2))
           .setValue(JSON.stringify(this.plugin.settings, null, 2) || '')
           .onChange(async (value) => {
             try {
@@ -278,6 +292,43 @@ class PythonLabSettings extends PluginSettingTab {
         text.inputEl.rows = 24;
         text.inputEl.cols = 120;
       });
+
+    // type: 'collection' | 'text' | 'graph';
+    // userInterface: 'panel-left' | 'panel-right' | 'replace-text' | 'insert-text';
+    // invokeOnFocus: boolean,
+    // addHotkey: boolean,
+    // debug: 'verbose' | 'off';
+    // active: boolean
+
+    // const updateCommand = async (newCommand:Command) => {
+    //   let commands: Command[] = [];
+    //   for (const oldCommand of this.plugin.settings.commands){
+    //     if (oldCommand.url == newCommand.url) {
+    //       commands.push(newCommand);
+    //     } else {
+    //       commands.push(oldCommand);
+    //     }
+    //   }
+    //   this.plugin.settings.commands = commands;
+    //   await this.plugin.saveSettings();
+    // }
+
+    // const build_settings = (commandEl:HTMLElement, command:Command) => {
+    //   new Setting(commandEl)
+    //     .setName('type')
+    //     .setDesc('What does the script return?')
+    //     .addDropdown((dropdown) => {
+    //       dropdown.addOption('text', 'text');
+    //       dropdown.addOption('collection', 'a collection of items');
+    //       dropdown.addOption('graph', 'a graph');
+    //       dropdown
+    //         .setValue(String(command.type))
+    //         .onChange(async (value) => {
+    //           this.plugin.settings.bullet = value;
+    //           await this.plugin.saveSettings();
+    //         });
+    //     });
+    // }
 
     const div = containerEl.createEl('div', {
       cls: 'python-lab-text',

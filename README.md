@@ -73,7 +73,8 @@ Configuring the plugin currently is done with a JSON file, where you specify wha
       "invokeOnFocus": false,
       "addHotkey": true,
       "debug": "verbose",
-      "userInterface": "insert-text"
+      "userInterface": "insert-text",
+      "active":false
     },
     {
       "name": "Convert to upper case",
@@ -82,16 +83,19 @@ Configuring the plugin currently is done with a JSON file, where you specify wha
       "invokeOnFocus": false,
       "addHotkey": true,
       "debug": "verbose",
-      "userInterface": "replace-text"
+      "userInterface": "replace-text",
+      "active":false
+
     },
     {
       "name": "Random score similarity",
-      "url": "http://localhost:5000/random",
+      "url": "http://localhost:5000/random_list",
       "type": "collection",
       "invokeOnFocus": true,
       "addHotkey": false,
       "debug": "verbose",
-      "userInterface": "panel-right"
+      "userInterface": "panel-right",
+      "active": true
     }
   ]
 }

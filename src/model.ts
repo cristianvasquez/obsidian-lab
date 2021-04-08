@@ -1,36 +1,39 @@
-interface Settings {
-  commands: Command[];
-}
+type Settings = {
+  server_url: string;
+  commands: Record<string, Command>;
+  debug: 'verbose' | 'off';
+};
 
-interface Command {
-  name: string;
-  url: string;
+type Command = {
+  label: string;
   type: 'collection' | 'text' | 'graph';
   userInterface: 'panel-left' | 'panel-right' | 'replace-text' | 'insert-text';
-  invokeOnFocus: boolean,
-  addHotkey: boolean,
-  debug: 'verbose' | 'off';
-}
+  active: boolean;
+  addHotkey: boolean;
+  invokeOnFocus: boolean;
+};
 
 interface CommandView {
   setData: any;
   redraw: any;
 }
 
-interface Input {
+// This goes to the server
+type Input = {
   vaultPath: string; // The current vault
   notePath?: string; // The active note (if there is one)
   text?: string; // The selected text (if there is)
   variant?: string; // when having different ML models.
-}
+};
 
-interface Item {
+// This comes from the server
+type Item = {
   path: string; // Can be an internal link (perhaps a url?)
   name: string;
   info?: object;
-}
+};
 
-interface PanelState {
+type PanelState = {
   label?: string;
   contents: Item[] | string;
-}
+};
