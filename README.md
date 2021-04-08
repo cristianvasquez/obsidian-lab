@@ -18,6 +18,10 @@ It's a plugin that calls a web app that executes the script, and then the result
 Unfortunately, the universal web language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
 Sometimes, it is quicker to experiment in, for example, Python, and later, if you want, make it work in Javascript.
 
+## Status
+
+This is still a proof of concept, expect bugs
+
 ## Requirement
 
 Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes python scripts.
@@ -180,10 +184,11 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 - [X] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
 
+## Apr 8: Added settings
+
+- [X] Checks if the server is up
+
 ## TODO
 
-- [ ] Add a warning, when exposed scripts are not the same as the config.
-      This could be a button in the config that checks if the endpoints are there
+- [ ] Refresh
 - [ ] Add graph clustering handler
-- [ ] Lists can be pasted in the editor as lists
-- [ ] Separate into a python command line

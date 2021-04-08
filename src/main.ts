@@ -288,10 +288,13 @@ class PythonLabSettings extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.createEl('h2', { text: 'Obsidian lab settings' });
+    containerEl.createEl('h4', { text: 'Restart after making changes' });
 
     const updateCommand = async (commandName: string, command: Command) => {
       this.plugin.settings.commands[commandName] = command;
-      console.log('save', command);
+      if(this.plugin.settings.debug=='verbose'){
+        console.log('save', command);
+      }
       await this.plugin.saveSettings();
     };
     const settings = this.plugin.settings;
@@ -356,8 +359,8 @@ class PythonLabSettings extends PluginSettingTab {
               'collection-right-panel',
               'items in right panel',
             );
-            dropdown.addOption('text-left-panel', 'text in left panel');
-            dropdown.addOption('text-right-panel', 'text in right panel');
+            dropdown.addOption('text-left-panel', 'left panel text');
+            dropdown.addOption('text-right-panel', 'right panel text');
             // dropdown.addOption('graph', 'a graph');
             dropdown.setValue(String(command.type)).onChange(async (value) => {
               command.type = value as
@@ -408,26 +411,28 @@ class PythonLabSettings extends PluginSettingTab {
         return response.json();
       })
       .then(function (data) {
-        console.log(data);
-        if (data.scripts)
-          serverURLSetting.setName(`${data.scripts.length} commands`);
-        for (const currentUrl of data.scripts) {
-          let commandName = currentUrl.substring(
-            currentUrl.lastIndexOf('/') + 1,
-          );
 
-          if (settings.commands[commandName]) {
-            addCommandSetting(commandName, settings.commands[commandName]);
-          } else {
-            addCommandSetting(commandName, {
-              label: commandName,
-              type: 'insert-text',
-              active: false,
-              addToPalette: false,
-              invokeOnOpen: false,
-            });
-          }
+        if (data.scripts){
+          serverURLSetting.setName(`Online [${data.scripts.length}]`);
+      for (const currentUrl of data.scripts) {
+        let commandName = currentUrl.substring(currentUrl.lastIndexOf('/') + 1);
+
+        if (settings.commands[commandName]) {
+          addCommandSetting(commandName, settings.commands[commandName]);
+        } else {
+          addCommandSetting(commandName, {
+            label: commandName,
+            type: 'insert-text',
+            active: false,
+            addToPalette: false,
+            invokeOnOpen: false,
+          });
         }
+      }
+
+        }
+
+
         // for (const [k, v] of Object.entries(
         //   this.plugin.settings.commands,
         // )) {
@@ -459,9 +464,6 @@ class PythonLabSettings extends PluginSettingTab {
         });
       });
 
-    //  containerEl.createEl('p', {
-    //    text: 'Restart after making changes.',
-    //  });
     //  containerEl.createEl('p', {
     //    text: 'Pull requests are both welcome and appreciated. :)',
     //  });
