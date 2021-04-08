@@ -5,12 +5,17 @@ type Settings = {
 };
 
 type Command = {
-  label: string;
-  type: 'collection' | 'text' | 'graph';
-  userInterface: 'panel-left' | 'panel-right' | 'replace-text' | 'insert-text';
   active: boolean;
-  addHotkey: boolean;
-  invokeOnFocus: boolean;
+  label: string;
+  type:
+    | 'collection-left-panel'
+    | 'collection-right-panel'
+    | 'text-left-panel'
+    | 'text-right-panel'
+    | 'replace-text'
+    | 'insert-text';
+  addToPalette: boolean;
+  invokeOnOpen: boolean;
 };
 
 interface CommandView {

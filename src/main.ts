@@ -17,29 +17,26 @@ const DEFAULT_SETTINGS: Settings = {
   commands: {
     hello_world: {
       label: 'Hello world',
-      type: 'text',
-      userInterface: 'insert-text',
+      type: 'insert-text',
       active: true,
-      addHotkey: true,
-      invokeOnFocus: false,
+      addToPalette: true,
+      invokeOnOpen: false,
     },
 
     to_upper_case: {
       label: 'Convert to upper case',
-      type: 'text',
-      userInterface: 'replace-text',
+      type: 'replace-text',
       active: true,
-      addHotkey: true,
-      invokeOnFocus: false,
+      addToPalette: true,
+      invokeOnOpen: false,
     },
 
     random_similarity: {
       label: 'Random score similarity',
-      type: 'text',
-      userInterface: 'panel-right',
+      type: 'collection-right-panel',
       active: true,
-      addHotkey: false,
-      invokeOnFocus: true,
+      addToPalette: false,
+      invokeOnOpen: true,
     },
   },
 };
@@ -52,7 +49,7 @@ export default class PythonLabPlugin extends Plugin {
     return `obsidian_lab_${command_name}`;
   }
 
-  private buildCommandURL(command_name: string): string {
+  public buildCommandURL(command_name: string): string {
     return `${this.settings.server_url}/${command_name}`;
   }
 
@@ -100,6 +97,7 @@ export default class PythonLabPlugin extends Plugin {
 
           let requestBody = JSON.stringify(parameters);
           if (debugEnabled) {
+            console.info('Exec:', command);
             console.info('requestBody', requestBody);
           }
 
@@ -121,18 +119,16 @@ export default class PythonLabPlugin extends Plugin {
                 console.error(data);
                 new Notification(data.message);
               } else {
-                if (command.userInterface == 'replace-text') {
+                if (command.type == 'replace-text') {
                   // Replaces the current selection
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
-                    // TODO probably lists should be rendered as markdown lists
                     editor.replaceSelection(data.contents);
                   }
-                } else if (command.userInterface == 'insert-text') {
+                } else if (command.type == 'insert-text') {
                   // Insert content in the cursor position
                   if (activeView instanceof MarkdownView) {
                     const editor = activeView.sourceMode.cmEditor;
-                    // TODO probably lists should be rendered as markdown lists
                     editor.replaceSelection(data.contents, 'start');
                   }
                 } else if (commandView) {
@@ -140,6 +136,8 @@ export default class PythonLabPlugin extends Plugin {
                   data.label = command.label;
                   commandView.setData(data);
                   commandView.redraw();
+                } else {
+                  console.error(`I don't know what to do with: `, command);
                 }
               }
             })
@@ -160,42 +158,46 @@ export default class PythonLabPlugin extends Plugin {
         let commandId: string = this.buildCommandId(commandName);
         let commandUrl = this.buildCommandURL(commandName);
 
-        if (
-          command.userInterface == 'panel-left' ||
-          command.userInterface == 'panel-right'
-        ) {
-          this.registerView(commandId, (leaf) => {
-            let commandView = new ResultListView(
-              leaf,
-              commandId,
-              command.label,
-            );
-            const handleCall = buildHandler(commandUrl, command, commandView);
+        if (command.active) {
+          if (
+            command.type == 'collection-left-panel' ||
+            command.type == 'collection-right-panel' ||
+            command.type == 'text-right-panel' ||
+            command.type == 'text-left-panel'
+          ) {
+            this.registerView(commandId, (leaf) => {
+              let commandView = new ResultListView(
+                leaf,
+                commandId,
+                command.label,
+              );
+              const handleCall = buildHandler(commandUrl, command, commandView);
 
+              this.addCommand({
+                id: commandName,
+                name: command.label,
+                callback: () => handleCall(),
+                hotkeys: [],
+              });
+
+              if (command.invokeOnOpen) {
+                commandView.registerCallback(handleCall);
+              }
+
+              return commandView;
+            });
+          } else if (
+            command.type == 'replace-text' ||
+            command.type == 'insert-text'
+          ) {
+            const handleCall = buildHandler(commandUrl, command, undefined);
             this.addCommand({
-              id: commandName,
+              id: commandId,
               name: command.label,
               callback: () => handleCall(),
               hotkeys: [],
             });
-
-            if (command.invokeOnFocus) {
-              commandView.registerCallback(handleCall);
-            }
-
-            return commandView;
-          });
-        } else if (
-          command.userInterface == 'replace-text' ||
-          command.userInterface == 'insert-text'
-        ) {
-          const handleCall = buildHandler(commandUrl, command, undefined);
-          this.addCommand({
-            id: commandId,
-            name: command.label,
-            callback: () => handleCall(),
-            hotkeys: [],
-          });
+          }
         }
       }
     } else {
@@ -229,15 +231,29 @@ export default class PythonLabPlugin extends Plugin {
         let commandId: string = this.buildCommandId(commandName);
 
         if (!this.app.workspace.getLeavesOfType(commandId).length) {
-          switch (command.userInterface) {
-            case 'panel-left': {
+          switch (command.type) {
+            case 'collection-left-panel': {
               this.app.workspace.getLeftLeaf(false).setViewState({
                 type: commandId,
                 active: true,
               });
               break;
             }
-            case 'panel-right': {
+            case 'text-left-panel': {
+              this.app.workspace.getLeftLeaf(false).setViewState({
+                type: commandId,
+                active: true,
+              });
+              break;
+            }
+            case 'collection-right-panel': {
+              this.app.workspace.getRightLeaf(false).setViewState({
+                type: commandId,
+                active: true,
+              });
+              break;
+            }
+            case 'text-right-panel': {
               this.app.workspace.getRightLeaf(false).setViewState({
                 type: commandId,
                 active: true,
@@ -271,73 +287,184 @@ class PythonLabSettings extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Registered commands' });
+    containerEl.createEl('h2', { text: 'Obsidian lab settings' });
 
-    new Setting(containerEl)
-      .setName('Commands')
-      .setDesc('config for each command')
-      .addTextArea((text) => {
-        text
-          .setPlaceholder(JSON.stringify(DEFAULT_SETTINGS, null, 2))
-          .setValue(JSON.stringify(this.plugin.settings, null, 2) || '')
-          .onChange(async (value) => {
-            try {
-              const newValue = JSON.parse(value);
-              this.plugin.settings = newValue;
-              await this.plugin.saveSettings();
-            } catch (e) {
-              return false;
-            }
-          });
-        text.inputEl.rows = 24;
-        text.inputEl.cols = 120;
+    const updateCommand = async (commandName: string, command: Command) => {
+      this.plugin.settings.commands[commandName] = command;
+      console.log('save', command);
+      await this.plugin.saveSettings();
+    };
+    const settings = this.plugin.settings;
+
+    const serverURLSetting = new Setting(this.containerEl)
+      .setName('url')
+      .setDesc(`The server url`)
+      .addText((text) => {
+        text.setValue(settings.server_url);
+        text.onChange(async (value) => {
+          this.plugin.settings.server_url = value as string;
+          await this.plugin.saveSettings();
+          this.display();
+        });
       });
 
-    // type: 'collection' | 'text' | 'graph';
-    // userInterface: 'panel-left' | 'panel-right' | 'replace-text' | 'insert-text';
-    // invokeOnFocus: boolean,
-    // addHotkey: boolean,
-    // debug: 'verbose' | 'off';
-    // active: boolean
+    /**
+     * Given a command, adds the configuration
+     * @param commandName
+     * @param command
+     */
+    const addCommandSetting = (commandName: string, command: Command) => {
+      let commandEl = containerEl.createEl('div', {});
 
-    // const updateCommand = async (newCommand:Command) => {
-    //   let commands: Command[] = [];
-    //   for (const oldCommand of this.plugin.settings.commands){
-    //     if (oldCommand.url == newCommand.url) {
-    //       commands.push(newCommand);
-    //     } else {
-    //       commands.push(oldCommand);
-    //     }
-    //   }
-    //   this.plugin.settings.commands = commands;
-    //   await this.plugin.saveSettings();
-    // }
+      let commandUrl = this.plugin.buildCommandURL(commandName);
 
-    // const build_settings = (commandEl:HTMLElement, command:Command) => {
-    //   new Setting(commandEl)
-    //     .setName('type')
-    //     .setDesc('What does the script return?')
-    //     .addDropdown((dropdown) => {
-    //       dropdown.addOption('text', 'text');
-    //       dropdown.addOption('collection', 'a collection of items');
-    //       dropdown.addOption('graph', 'a graph');
-    //       dropdown
-    //         .setValue(String(command.type))
-    //         .onChange(async (value) => {
-    //           this.plugin.settings.bullet = value;
-    //           await this.plugin.saveSettings();
-    //         });
-    //     });
-    // }
+      commandEl.createEl('h3', { text: `Command: ${commandName}` });
 
-    const div = containerEl.createEl('div', {
-      cls: 'python-lab-text',
-    });
+      const active = command.active ? 'active' : 'inactive';
 
-    containerEl.createEl('p', { text: 'Restart after making changes.' });
-    containerEl.createEl('p', {
-      text: 'Pull requests are both welcome and appreciated. :)',
-    });
+      new Setting(commandEl)
+        .setName(`[${active}] ${commandUrl}`)
+        .addToggle((toggle) => {
+          toggle.setValue(command.active);
+          toggle.onChange(async (value) => {
+            command.active = value as boolean;
+            await updateCommand(commandName, command);
+            this.display();
+          });
+        });
+
+      if (command.active) {
+        new Setting(commandEl)
+          .setName('name')
+          .setDesc(``)
+          .addText((text) => {
+            text.setValue(command.label);
+            text.onChange(async (value) => {
+              command.label = value as string;
+              await updateCommand(commandName, command);
+            });
+          });
+
+        new Setting(commandEl)
+          .setName('Type')
+          .setDesc('')
+          .addDropdown((dropdown) => {
+            dropdown.addOption('insert-text', 'insert text');
+            dropdown.addOption('replace-text', 'replace selected text');
+            dropdown.addOption('collection-left-panel', 'items in left panel');
+            dropdown.addOption(
+              'collection-right-panel',
+              'items in right panel',
+            );
+            dropdown.addOption('text-left-panel', 'text in left panel');
+            dropdown.addOption('text-right-panel', 'text in right panel');
+            // dropdown.addOption('graph', 'a graph');
+            dropdown.setValue(String(command.type)).onChange(async (value) => {
+              command.type = value as
+                | 'collection-left-panel'
+                | 'collection-right-panel'
+                | 'text-left-panel'
+                | 'text-right-panel'
+                | 'replace-text'
+                | 'insert-text';
+              await updateCommand(commandName, command);
+              this.display();
+            });
+          });
+
+        new Setting(commandEl)
+          .setName('on open')
+          .setDesc('Invoke when opening the note')
+          .addToggle((toggle) => {
+            toggle.setValue(command.invokeOnOpen);
+            toggle.onChange(async (value) => {
+              command.invokeOnOpen = value as boolean;
+              await updateCommand(commandName, command);
+              this.display();
+            });
+          });
+
+        new Setting(commandEl)
+          .setName('palette')
+          .setDesc('Add to command palette')
+          .addToggle((toggle) => {
+            toggle.setValue(command.addToPalette);
+            toggle.onChange(async (value) => {
+              command.addToPalette = value as boolean;
+              await updateCommand(commandName, command);
+              this.display();
+            });
+          });
+      }
+    };
+
+    fetch(settings.server_url, {
+      method: 'GET',
+      headers: {
+        'content-type': 'application/json',
+      },
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        console.log(data);
+        if (data.scripts)
+          serverURLSetting.setName(`${data.scripts.length} commands`);
+        for (const currentUrl of data.scripts) {
+          let commandName = currentUrl.substring(
+            currentUrl.lastIndexOf('/') + 1,
+          );
+
+          if (settings.commands[commandName]) {
+            addCommandSetting(commandName, settings.commands[commandName]);
+          } else {
+            addCommandSetting(commandName, {
+              label: commandName,
+              type: 'insert-text',
+              active: false,
+              addToPalette: false,
+              invokeOnOpen: false,
+            });
+          }
+        }
+        // for (const [k, v] of Object.entries(
+        //   this.plugin.settings.commands,
+        // )) {
+        //   let commandName = k as string;
+        //   let command = v as Command;
+        //   addCommandSetting(commandName, command);
+        // }
+        // End settings
+      })
+      .catch(function (error) {
+        serverURLSetting
+          .setName('Could not access server')
+          .setDesc('see logs')
+          .setClass('python-lab-error');
+        console.error(error);
+      });
+
+    new Setting(containerEl)
+      .setName('Debug')
+      .setDesc('')
+      .addDropdown((dropdown) => {
+        dropdown.addOption('off', 'off');
+        dropdown.addOption('verbose', 'verbose');
+        // dropdown.addOption('graph', 'a graph');
+        dropdown.setValue(String(settings.debug)).onChange(async (value) => {
+          this.plugin.settings.debug = value as 'off' | 'verbose';
+          await this.plugin.saveSettings();
+          this.display();
+        });
+      });
+
+    //  containerEl.createEl('p', {
+    //    text: 'Restart after making changes.',
+    //  });
+    //  containerEl.createEl('p', {
+    //    text: 'Pull requests are both welcome and appreciated. :)',
+    //  });
   }
 }
 

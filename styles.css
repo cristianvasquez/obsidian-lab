@@ -9,3 +9,10 @@
   margin: 0 auto;
   text-align: center;
 }
+
+.python-lab-error {
+  width: 70%;
+  margin: 0 auto;
+  text-align: center;
+  color: red;
+}
