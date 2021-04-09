@@ -5,5 +5,6 @@
   "minAppVersion": "0.11.6",
   "description": "An interface to experiment with python scripts",
   "author": "Cristian Vasquez",
-  "isDesktopOnly": false
+  "isDesktopOnly": false,
+  "repo":"cristianvasquez/obsidian-lab"
 }

@@ -66,10 +66,11 @@ And gets a JSON response
 
 ## Config
 
-Configuring the plugin currently is done via de settings, where you specify what is triggered, how is it shown, 
+Configuring the plugin currently is done via the settings, where you specify what is triggered, how is it shown, 
 etc...
 
-TODO: Explain this.
+![img.png](img.png)
+TODO: Give an example.
 
 ## Build
 
