@@ -62,14 +62,14 @@ And gets a JSON response
 
 2. The plugin panel is populated with the JSON response.
 
-![Text](./docs/example.png)
+![Example widget](./docs/example.png)
 
 ## Config
 
 Configuring the plugin currently is done via the settings, where you specify what is triggered, how is it shown, 
 etc...
 
-![img.png](img.png)
+![Example settings](./docs/settings_example.png)
 TODO: Give an example.
 
 ## Build
