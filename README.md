@@ -24,9 +24,10 @@ This is still a proof of concept, expect bugs
 
 ## Requirement
 
-Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes python scripts.
+Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
+exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples)
 
-Perhaps someone else wants to do one using javascript, rust, or whatever? :D
+Perhaps someone else wants to do write a similar one using javascript, rust, or whatever? :D
 
 ## How it works?
 

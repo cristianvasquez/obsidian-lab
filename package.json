@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-scripts-lab",
-  "version": "0.1.0",
-  "description": "Obsidian scripts lab",
+  "name": "obsidian-lab-plugin",
+  "version": "0.2.0",
+  "description": "Obsidian lab plugin",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
@@ -31,6 +31,6 @@
     "@types/core-js": "^2.5.4"
   },
   "dependencies": {
-    
+
   }
 }
