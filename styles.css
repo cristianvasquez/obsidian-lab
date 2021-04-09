@@ -16,3 +16,12 @@
   text-align: center;
   color: red;
 }
+
+.python-lab-activated {
+  margin: 0 auto;
+  text-align: right;
+}
+.python-lab-deactivated {
+  margin: 0 auto;
+  text-align: right;
+}

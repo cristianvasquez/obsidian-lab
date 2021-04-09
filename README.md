@@ -184,11 +184,14 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 - [X] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
 
-## Apr 8: Added settings
+## Apr 8: Settings
 
-- [X] Checks if the server is up
+- [X] Add settings
+  
+## Apr 9: Application state
+
+- [X] Refactor
 
 ## TODO
 
-- [ ] Refresh
 - [ ] Add graph clustering handler

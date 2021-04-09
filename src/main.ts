@@ -1,473 +1,535 @@
-import { copyFile } from 'fs';
 import {
-  addIcon,
-  App,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  FileSystemAdapter,
-  Notice,
-  MarkdownView,
+    addIcon,
+    App,
+    Plugin,
+    PluginSettingTab,
+    Setting,
+    FileSystemAdapter,
+    Notice,
+    MarkdownView, WorkspaceLeaf,
 } from 'obsidian';
-import { ResultListView } from './panel';
+import {ResultListView} from './panel';
 
 const DEFAULT_SETTINGS: Settings = {
-  server_url: 'http://localhost:5000',
-  debug: 'verbose',
-  commands: {
-    hello_world: {
-      label: 'Hello world',
-      type: 'insert-text',
-      active: true,
-      addToPalette: true,
-      invokeOnOpen: false,
-    },
+    server_url: 'http://localhost:5000',
+    debug: 'verbose',
+    commands: {
+        hello_world: {
+            active: true,
+            label: 'Hello world',
+            type: 'insert-text',
+            invokeOnOpen: false,
+        },
 
-    to_upper_case: {
-      label: 'Convert to upper case',
-      type: 'replace-text',
-      active: true,
-      addToPalette: true,
-      invokeOnOpen: false,
-    },
+        to_upper_case: {
+            active: true,
+            label: 'Convert to upper case',
+            type: 'replace-text',
+            invokeOnOpen: false,
+        },
 
-    random_similarity: {
-      label: 'Random score similarity',
-      type: 'collection-right-panel',
-      active: true,
-      addToPalette: false,
-      invokeOnOpen: true,
+        random_similarity: {
+            active: true,
+            label: 'Random score similarity',
+            type: 'collection-right-panel',
+            invokeOnOpen: true,
+        },
     },
-  },
 };
 
-export default class PythonLabPlugin extends Plugin {
-  public settings: Settings;
-  public view: ResultListView;
 
-  private buildCommandId(command_name: string): string {
-    return `obsidian_lab_${command_name}`;
-  }
+class Static {
 
-  public buildCommandURL(command_name: string): string {
-    return `${this.settings.server_url}/${command_name}`;
-  }
+    public static COMMAND_PREFIX = 'obsidian_lab_'
 
-  public getVaultPath(): string {
-    if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
-      throw new Error('app.vault is not a FileSystemAdapter instance');
+    public static commandIdFromName(command_name: string): string {
+        return `${Static.COMMAND_PREFIX}${command_name}`;
     }
-    return this.app.vault.adapter.getBasePath();
-  }
 
-  public async onload(): Promise<void> {
-    console.log('loading python lab plugin');
+    public static getNameFromUrl(currentUrl: any) {
+        return currentUrl.substring(currentUrl.lastIndexOf('/') + 1);
+    }
 
-    addIcon('sweep', sweepIcon);
-    addIcon('lab', labIcon);
+    public static isTextBased(command: Command) {
+        return command.type == 'replace-text' ||
+            command.type == 'insert-text';
+    }
 
-    await this.loadSettings();
-
-    const debugEnabled = this.settings.debug == 'verbose';
-
-    if (this.settings && this.settings.commands) {
-      // The function that triggers each time 'command' is executed
-
-      const buildHandler = (
-        command_url: string,
-        command: Command,
-        commandView: CommandView,
-      ) => {
-        return async () => {
-          let parameters: Input = {
-            vaultPath: this.getVaultPath(),
-          };
-          const activeView = this.app.workspace.activeLeaf.view;
-
-          if (activeView instanceof MarkdownView) {
-            const editor = activeView.sourceMode.cmEditor;
-            let selectedText = editor.getSelection();
-            if (selectedText) {
-              parameters.text = selectedText;
-            }
-            if (activeView.file && activeView.file.path) {
-              parameters.notePath = activeView.file.path;
-            }
-          }
-
-          let requestBody = JSON.stringify(parameters);
-          if (debugEnabled) {
-            console.info('Exec:', command);
-            console.info('requestBody', requestBody);
-          }
-
-          fetch(command_url, {
-            method: 'POST',
-            body: requestBody,
-            headers: {
-              'content-type': 'application/json',
-            },
-          })
-            .then(function (response) {
-              return response.json();
-            })
-            .then(function (data) {
-              if (debugEnabled) {
-                console.info('data', data);
-              }
-              if (data.errors) {
-                console.error(data);
-                new Notification(data.message);
-              } else {
-                if (command.type == 'replace-text') {
-                  // Replaces the current selection
-                  if (activeView instanceof MarkdownView) {
-                    const editor = activeView.sourceMode.cmEditor;
-                    editor.replaceSelection(data.contents);
-                  }
-                } else if (command.type == 'insert-text') {
-                  // Insert content in the cursor position
-                  if (activeView instanceof MarkdownView) {
-                    const editor = activeView.sourceMode.cmEditor;
-                    editor.replaceSelection(data.contents, 'start');
-                  }
-                } else if (commandView) {
-                  // Update the state of the view panel
-                  data.label = command.label;
-                  commandView.setData(data);
-                  commandView.redraw();
-                } else {
-                  console.error(`I don't know what to do with: `, command);
-                }
-              }
-            })
-            .catch(function (error) {
-              console.error(error);
-              new Notice(`[${command.label}]. ${error.message}`);
-            });
-        };
-      };
-
-      for (const [k, v] of Object.entries(this.settings.commands)) {
-        let commandName = k as string;
-        let command = v as Command;
-        if (this.settings.debug == 'verbose') {
-          console.log(`registering [${commandName}] as [${command.type}]`);
-        }
-
-        let commandId: string = this.buildCommandId(commandName);
-        let commandUrl = this.buildCommandURL(commandName);
-
-        if (command.active) {
-          if (
-            command.type == 'collection-left-panel' ||
+    public static isPanelBased(command: Command) {
+        return command.type == 'collection-left-panel' ||
             command.type == 'collection-right-panel' ||
             command.type == 'text-right-panel' ||
-            command.type == 'text-left-panel'
-          ) {
-            this.registerView(commandId, (leaf) => {
-              let commandView = new ResultListView(
-                leaf,
-                commandId,
-                command.label,
-              );
-              const handleCall = buildHandler(commandUrl, command, commandView);
+            command.type == 'text-left-panel';
+    }
 
-              this.addCommand({
-                id: commandName,
+    public static async getServerStatus(serverUrl: string) {
+        const result: ServerStatus = await fetch(serverUrl, {
+            method: 'GET',
+            headers: {
+                'content-type': 'application/json',
+            },
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                const status: ServerStatus = {
+                    status: 'available',
+                    availableCommandUrls: data.scripts ? data.scripts : []
+                }
+                return status;
+            })
+            .catch(function (error) {
+                return {
+                    status: 'unavailable',
+                    availableCommandUrls: [],
+                    error: error
+                }
+            });
+        return result
+    }
+
+    public static expandCommands(commandUrls: string[], commandSettings: Record<string, Command>) {
+        let result: Map<string, Command> = new Map()
+        for (const commandURL of commandUrls) {
+            let commandName = Static.getNameFromUrl(commandURL);
+            if (commandSettings[commandName]) {
+                result.set(commandName, commandSettings[commandName])
+            } else {
+                result.set(commandName, {
+                    label: commandName,
+                    type: 'insert-text',
+                    active: false,
+                    invokeOnOpen: false,
+                })
+            }
+        }
+        return result;
+    }
+}
+
+
+export default class PythonLabPlugin extends Plugin {
+    public settings: Settings;
+
+    public commandUrlFromName(command_name: string): string {
+        return `${this.settings.server_url}/${command_name}`;
+    }
+
+    public getVaultPath(): string {
+        if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
+            throw new Error('app.vault is not a FileSystemAdapter instance');
+        }
+        return this.app.vault.adapter.getBasePath();
+    }
+
+
+    public async onload(): Promise<void> {
+        console.log('loading python lab plugin');
+
+        addIcon('sweep', sweepIcon);
+        addIcon('lab', labIcon);
+
+        await this.loadSettings();
+
+        const serverStatus = await Static.getServerStatus(this.settings.server_url)
+
+
+        let initLeaves = function (availableCommands: Map<string, Command>) {
+            const init: () => any = this.initCommandViews(availableCommands)
+            if (this.app.workspace.layoutReady) {
+                init();
+            } else {
+                this.registerEvent(this.app.workspace.on('layout-ready', init));
+            }
+        };
+        if (serverStatus.status == 'available') {
+            const availableCommands: Map<string, Command> = Static.expandCommands(serverStatus.availableCommandUrls, this.settings.commands)
+            for (let [name, command] of availableCommands) {
+                if (command.active) {
+                    this.initCommand(name, command)
+                }
+            }
+            initLeaves.call(this, availableCommands);
+        } else {
+            new Notice('Lab: Cannot reach server')
+            if (this.settings.debug == 'verbose') {
+                console.log(serverStatus)
+            }
+            initLeaves.call(this, new Map());
+        }
+
+        this.addSettingTab(new PythonLabSettings(this.app, this));
+    }
+
+    private initCommand(name: string, command: Command) {
+        const buildExecute = this.executeCommand();
+        if (this.settings.debug == 'verbose') {
+            console.log(`registering [${name}] as [${command.type}]`);
+        }
+        let commandId: string = Static.commandIdFromName(name);
+        let commandUrl = this.commandUrlFromName(name);
+        if (Static.isPanelBased(command)) {
+            this.registerView(commandId, (leaf) => {
+                let commandView = new ResultListView(
+                    leaf,
+                    commandId,
+                    command.label,
+                );
+                const handleCall = buildExecute(commandUrl, command, commandView);
+                this.addCommand({
+                    id: commandId,
+                    name: command.label,
+                    callback: () => handleCall(),
+                    hotkeys: [],
+                });
+
+                if (command.invokeOnOpen) {
+                    commandView.registerCallback(handleCall);
+                }
+                return commandView;
+            });
+
+        } else if (Static.isTextBased(command)) {
+            const handleCall = buildExecute(commandUrl, command, undefined);
+            this.addCommand({
+                id: commandId,
                 name: command.label,
                 callback: () => handleCall(),
                 hotkeys: [],
-              });
-
-              if (command.invokeOnOpen) {
-                commandView.registerCallback(handleCall);
-              }
-
-              return commandView;
             });
-          } else if (
-            command.type == 'replace-text' ||
-            command.type == 'insert-text'
-          ) {
-            const handleCall = buildHandler(commandUrl, command, undefined);
-            this.addCommand({
-              id: commandId,
-              name: command.label,
-              callback: () => handleCall(),
-              hotkeys: [],
+        }
+    }
+
+    private executeCommand() {
+
+        const debugEnabled = this.settings.debug == 'verbose'
+
+        const result = (
+            command_url: string,
+            command: Command,
+            commandView: CommandView,
+        ) => {
+            return async () => {
+
+                let parameters: Input = {
+                    vaultPath: this.getVaultPath(),
+                };
+                const activeView = this.app.workspace.activeLeaf.view;
+                if (activeView instanceof MarkdownView) {
+                    const editor = activeView.sourceMode.cmEditor;
+                    let selectedText = editor.getSelection();
+                    if (selectedText) {
+                        parameters.text = selectedText;
+                    }
+                    if (activeView.file && activeView.file.path) {
+                        parameters.notePath = activeView.file.path;
+                    }
+                }
+
+                let requestBody = JSON.stringify(parameters);
+
+                if (debugEnabled) {
+                    console.info('Exec:', command);
+                    console.info('requestBody', requestBody);
+                }
+
+                fetch(command_url, {
+                    method: 'POST',
+                    body: requestBody,
+                    headers: {
+                        'content-type': 'application/json',
+                    },
+                })
+                    .then(function (response) {
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (debugEnabled) {
+                            console.info('response data', data);
+                        }
+                        if (data.errors) {
+                            console.error(data);
+                            new Notification(data.message);
+                        } else {
+                            if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
+                                PythonLabPlugin.applyReplaceText(activeView, data);
+                            } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
+                                PythonLabPlugin.applyInsertText(activeView, data);
+                            } else if (commandView) {
+                                data.label = command.label;
+                                PythonLabPlugin.applyUpdatePanel(commandView, data);
+                            } else {
+                                console.error(`Cannot process: `, command);
+                            }
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                        new Notice(`[${command.label}]. ${error.message}`);
+                    });
+            };
+        };
+        return result;
+    }
+
+    private static applyUpdatePanel(commandView: CommandView, data: any) {
+        // Update the state of the view panel
+        commandView.setData(data);
+        commandView.redraw();
+    }
+
+    private static applyInsertText(activeView: MarkdownView, data: any) {
+        // Insert content in the cursor position
+        const editor = activeView.sourceMode.cmEditor;
+        editor.replaceSelection(data.contents, 'start');
+    }
+
+    private static applyReplaceText(activeView: MarkdownView, data: any) {
+        // Replaces the current selection
+        const editor = activeView.sourceMode.cmEditor;
+        editor.replaceSelection(data.contents);
+    }
+
+    public async loadSettings(): Promise<void> {
+        this.settings = Object.assign(DEFAULT_SETTINGS, await super.loadData());
+    }
+
+    public async saveSettings() {
+        await this.saveData(this.settings);
+    }
+
+    /**
+     * Init all commands
+     */
+    private initCommandViews = (commands: Map<string, Command>) => {
+
+        const result = () => {
+            this.clearLabLeaves();
+
+            // Attach only commands that are panel based.
+            for (let [name, command] of commands) {
+                if (command.active && Static.isPanelBased(command)) {
+                    let commandId: string = Static.commandIdFromName(name);
+                    this.initCommandView(commandId, command);
+                }
+            }
+
+        };
+        return result;
+    }
+
+    private clearLabLeaves() {
+        //Disclaimer: I still cannot figure out how 'groups' work by just looking at the API signature
+        // The intention here is to clean all leaves of created by the lab
+        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
+            if (leaf.getViewState().type.startsWith(Static.COMMAND_PREFIX)) {
+                leaf.detach();
+            }
+        });
+    }
+
+    private async initCommandView(commandId: string, command: Command) {
+        const existing = this.app.workspace.getLeavesOfType(commandId);
+        if (existing.length) {
+            this.app.workspace.revealLeaf(existing[0]);
+            return;
+        }
+        if (command.type == 'collection-left-panel' || command.type == 'text-left-panel') {
+            await this.app.workspace.getLeftLeaf(false).setViewState({
+                type: commandId,
+                // group:'lab',
+                active: true,
             });
-          }
+        } else if (command.type == 'collection-right-panel' || command.type == 'text-right-panel') {
+            await this.app.workspace.getRightLeaf(false).setViewState({
+                type: commandId,
+                // group:'lab',
+                active: true,
+            });
+        } else {
+            console.error('Not implemented for', commandId, command)
         }
-      }
-    } else {
-      console.log(`settings[${this.settings}]`);
+
     }
 
-    if (this.app.workspace.layoutReady) {
-      this.initView();
-    } else {
-      this.registerEvent(this.app.workspace.on('layout-ready', this.initView));
-    }
-    this.addSettingTab(new PythonLabSettings(this.app, this));
-  }
-
-  public async loadSettings(): Promise<void> {
-    this.settings = Object.assign(DEFAULT_SETTINGS, await super.loadData());
-  }
-
-  public async saveSettings() {
-    await this.saveData(this.settings);
-  }
-
-  /**
-   * Init all commands
-   */
-  private readonly initView = (): void => {
-    if (this.settings && this.settings.commands) {
-      for (const [k, v] of Object.entries(this.settings.commands)) {
-        let commandName = k as string;
-        let command = v as Command;
-        let commandId: string = this.buildCommandId(commandName);
-
-        if (!this.app.workspace.getLeavesOfType(commandId).length) {
-          switch (command.type) {
-            case 'collection-left-panel': {
-              this.app.workspace.getLeftLeaf(false).setViewState({
-                type: commandId,
-                active: true,
-              });
-              break;
-            }
-            case 'text-left-panel': {
-              this.app.workspace.getLeftLeaf(false).setViewState({
-                type: commandId,
-                active: true,
-              });
-              break;
-            }
-            case 'collection-right-panel': {
-              this.app.workspace.getRightLeaf(false).setViewState({
-                type: commandId,
-                active: true,
-              });
-              break;
-            }
-            case 'text-right-panel': {
-              this.app.workspace.getRightLeaf(false).setViewState({
-                type: commandId,
-                active: true,
-              });
-              break;
-            }
-            default: {
-              //statements;
-              break;
-            }
-          }
-        }
-      }
-    }
-  };
 }
+
 
 /**
  * Settings
  */
 
 class PythonLabSettings extends PluginSettingTab {
-  private readonly plugin: PythonLabPlugin;
+    private readonly plugin: PythonLabPlugin;
 
-  constructor(app: App, plugin: PythonLabPlugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
+    constructor(app: App, plugin: PythonLabPlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
 
-  public display(): void {
-    const { containerEl } = this;
+    public display(): void {
+        const {containerEl} = this;
 
-    containerEl.empty();
-    containerEl.createEl('h2', { text: 'Obsidian lab settings' });
-    containerEl.createEl('h4', { text: 'Restart after making changes' });
+        containerEl.empty();
+        containerEl.createEl('h2', {text: 'Obsidian lab settings'});
+        containerEl.createEl('h4', {text: 'Restart after making changes'});
 
-    const updateCommand = async (commandName: string, command: Command) => {
-      this.plugin.settings.commands[commandName] = command;
-      if(this.plugin.settings.debug=='verbose'){
-        console.log('save', command);
-      }
-      await this.plugin.saveSettings();
-    };
-    const settings = this.plugin.settings;
+        const settings = this.plugin.settings;
 
-    const serverURLSetting = new Setting(this.containerEl)
-      .setName('url')
-      .setDesc(`The server url`)
-      .addText((text) => {
-        text.setValue(settings.server_url);
-        text.onChange(async (value) => {
-          this.plugin.settings.server_url = value as string;
-          await this.plugin.saveSettings();
-          this.display();
-        });
-      });
-
-    /**
-     * Given a command, adds the configuration
-     * @param commandName
-     * @param command
-     */
-    const addCommandSetting = (commandName: string, command: Command) => {
-      let commandEl = containerEl.createEl('div', {});
-
-      let commandUrl = this.plugin.buildCommandURL(commandName);
-
-      commandEl.createEl('h3', { text: `Command: ${commandName}` });
-
-      const active = command.active ? 'active' : 'inactive';
-
-      new Setting(commandEl)
-        .setName(`[${active}] ${commandUrl}`)
-        .addToggle((toggle) => {
-          toggle.setValue(command.active);
-          toggle.onChange(async (value) => {
-            command.active = value as boolean;
-            await updateCommand(commandName, command);
-            this.display();
-          });
-        });
-
-      if (command.active) {
-        new Setting(commandEl)
-          .setName('name')
-          .setDesc(``)
-          .addText((text) => {
-            text.setValue(command.label);
-            text.onChange(async (value) => {
-              command.label = value as string;
-              await updateCommand(commandName, command);
-            });
-          });
-
-        new Setting(commandEl)
-          .setName('Type')
-          .setDesc('')
-          .addDropdown((dropdown) => {
-            dropdown.addOption('insert-text', 'insert text');
-            dropdown.addOption('replace-text', 'replace selected text');
-            dropdown.addOption('collection-left-panel', 'items in left panel');
-            dropdown.addOption(
-              'collection-right-panel',
-              'items in right panel',
+        const serverURLSetting = new Setting(this.containerEl)
+            .setName('Server url')
+            .setDesc('Run a server like')
+            .addText((text) => {
+                text.setValue(settings.server_url);
+                text.onChange(async (value) => {
+                    this.plugin.settings.server_url = value as string;
+                    await this.plugin.saveSettings();
+                    // How to maintain focus on this?
+                    // this.display();
+                })
+            }).addButton((button) =>
+                button.setButtonText("Refresh").onClick(async () => {
+                    this.display();
+                })
             );
-            dropdown.addOption('text-left-panel', 'left panel text');
-            dropdown.addOption('text-right-panel', 'right panel text');
-            // dropdown.addOption('graph', 'a graph');
-            dropdown.setValue(String(command.type)).onChange(async (value) => {
-              command.type = value as
-                | 'collection-left-panel'
-                | 'collection-right-panel'
-                | 'text-left-panel'
-                | 'text-right-panel'
-                | 'replace-text'
-                | 'insert-text';
-              await updateCommand(commandName, command);
-              this.display();
+
+
+        const updateCommand = async (commandName: string, command: Command) => {
+            this.plugin.settings.commands[commandName] = command;
+            if (this.plugin.settings.debug == 'verbose') {
+                console.log('save', command);
+            }
+            await this.plugin.saveSettings();
+        };
+
+
+        Static.getServerStatus(settings.server_url).then((serverStatus) => {
+            if (serverStatus.status == 'available') {
+                const availableCommands = Static.expandCommands(serverStatus.availableCommandUrls, settings.commands)
+                let n = 0
+                for (let [name, command] of availableCommands) {
+                    addCommandSetting(name, command)
+                    n++
+                }
+                serverURLSetting.setName(`Online [${n}]`);
+            } else {
+                serverURLSetting
+                    .setName('⚠ Cannot reach server')
+                    .setDesc('')
+                    .setClass('python-lab-error');
+                console.log(serverStatus)
+            }
+
+            this.setFooter(containerEl, settings);
+
+        })
+
+        /**
+         * Given a command, adds the configuration
+         * @param name
+         * @param command
+         */
+        const addCommandSetting = (name: string, command: Command) => {
+            let commandEl = containerEl.createEl('div', {});
+            let commandUrl = this.plugin.commandUrlFromName(name);
+
+
+            const clz = command.active ? 'python-lab-activated' : 'python-lab-deactivated';
+            new Setting(commandEl)
+                .setName(`${name}`)
+                .setDesc(`Activate ${commandUrl}`)
+                .setClass(clz)
+                .addToggle((toggle) => {
+                    toggle.setValue(command.active);
+                    toggle.onChange(async (value) => {
+                        command.active = value as boolean;
+                        await updateCommand(name, command);
+                        this.display();
+                    });
+                });
+
+            if (command.active) {
+                new Setting(commandEl)
+                    .setName('Setup')
+                    .setDesc(``)
+                    // Name
+                    .addText((text) => {
+                        text.setValue(command.label);
+                        text.onChange(async (value) => {
+                            command.label = value as string;
+                            await updateCommand(name, command);
+                        });
+                    })
+                    // Type
+                    .addDropdown((dropdown) => {
+                        dropdown.addOption('insert-text', 'insert text');
+                        dropdown.addOption('replace-text', 'replace selected text');
+                        dropdown.addOption('collection-left-panel', 'items in left panel');
+                        dropdown.addOption(
+                            'collection-right-panel',
+                            'items in right panel',
+                        );
+                        dropdown.addOption('text-left-panel', 'left panel text');
+                        dropdown.addOption('text-right-panel', 'right panel text');
+                        // dropdown.addOption('graph', 'a graph');
+                        dropdown.setValue(String(command.type)).onChange(async (value) => {
+                            command.type = value as
+                                | 'collection-left-panel'
+                                | 'collection-right-panel'
+                                | 'text-left-panel'
+                                | 'text-right-panel'
+                                | 'replace-text'
+                                | 'insert-text';
+                            await updateCommand(name, command);
+                            this.display();
+                        })
+                    })
+
+
+                new Setting(containerEl)
+                    .setName('Additional triggers')
+                    .setDesc('')
+                    .addDropdown((dropdown) => {
+                        dropdown.addOption('false', 'none');
+                        dropdown.addOption('true', 'when opening a file');
+                        dropdown.setValue(String(command.invokeOnOpen)).onChange(async (value) => {
+                            command.invokeOnOpen = value == 'true'
+                            await updateCommand(name, command);
+                            this.display();
+                        });
+                    });
+
+            }
+        };
+
+
+    }
+
+
+    private setFooter(containerEl: HTMLElement, settings: Settings) {
+        new Setting(containerEl)
+            .setName('Debug')
+            .setDesc('')
+            .addDropdown((dropdown) => {
+                dropdown.addOption('off', 'off');
+                dropdown.addOption('verbose', 'verbose');
+                // dropdown.addOption('graph', 'a graph');
+                dropdown.setValue(String(settings.debug)).onChange(async (value) => {
+                    this.plugin.settings.debug = value as 'off' | 'verbose';
+                    await this.plugin.saveSettings();
+                    this.display();
+                });
             });
-          });
 
-        new Setting(commandEl)
-          .setName('on open')
-          .setDesc('Invoke when opening the note')
-          .addToggle((toggle) => {
-            toggle.setValue(command.invokeOnOpen);
-            toggle.onChange(async (value) => {
-              command.invokeOnOpen = value as boolean;
-              await updateCommand(commandName, command);
-              this.display();
-            });
-          });
-
-        new Setting(commandEl)
-          .setName('palette')
-          .setDesc('Add to command palette')
-          .addToggle((toggle) => {
-            toggle.setValue(command.addToPalette);
-            toggle.onChange(async (value) => {
-              command.addToPalette = value as boolean;
-              await updateCommand(commandName, command);
-              this.display();
-            });
-          });
-      }
-    };
-
-    fetch(settings.server_url, {
-      method: 'GET',
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
-      .then(function (response) {
-        return response.json();
-      })
-      .then(function (data) {
-
-        if (data.scripts){
-          serverURLSetting.setName(`Online [${data.scripts.length}]`);
-      for (const currentUrl of data.scripts) {
-        let commandName = currentUrl.substring(currentUrl.lastIndexOf('/') + 1);
-
-        if (settings.commands[commandName]) {
-          addCommandSetting(commandName, settings.commands[commandName]);
-        } else {
-          addCommandSetting(commandName, {
-            label: commandName,
-            type: 'insert-text',
-            active: false,
-            addToPalette: false,
-            invokeOnOpen: false,
-          });
-        }
-      }
-
-        }
-
-
-        // for (const [k, v] of Object.entries(
-        //   this.plugin.settings.commands,
-        // )) {
-        //   let commandName = k as string;
-        //   let command = v as Command;
-        //   addCommandSetting(commandName, command);
-        // }
-        // End settings
-      })
-      .catch(function (error) {
-        serverURLSetting
-          .setName('Could not access server')
-          .setDesc('see logs')
-          .setClass('python-lab-error');
-        console.error(error);
-      });
-
-    new Setting(containerEl)
-      .setName('Debug')
-      .setDesc('')
-      .addDropdown((dropdown) => {
-        dropdown.addOption('off', 'off');
-        dropdown.addOption('verbose', 'verbose');
-        // dropdown.addOption('graph', 'a graph');
-        dropdown.setValue(String(settings.debug)).onChange(async (value) => {
-          this.plugin.settings.debug = value as 'off' | 'verbose';
-          await this.plugin.saveSettings();
-          this.display();
+        containerEl.createEl('p', {
+            text: 'Pull requests are both welcome and appreciated. :)',
         });
-      });
-
-    //  containerEl.createEl('p', {
-    //    text: 'Pull requests are both welcome and appreciated. :)',
-    //  });
-  }
+        containerEl.createEl('a', {
+            text: 'Server github: obsidian-lab-py',
+            href: 'https://github.com/cristianvasquez/obsidian-lab-py'
+        });
+    }
 }
 
 const sweepIcon = `
