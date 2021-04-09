@@ -59,77 +59,16 @@ And gets a JSON response
 }
 ```
 
-2. The plugin the UI with the JSON response.
+2. The plugin panel is populated with the JSON response.
 
 ![Text](./docs/example.png)
 
 ## Config
 
-Configuring the plugin currently is done with a JSON file, where you specify what is triggered, how is it shown, etc...
+Configuring the plugin currently is done via de settings, where you specify what is triggered, how is it shown, 
+etc...
 
-```json
-{
-  "commands": [
-    {
-      "name": "Hello world",
-      "url": "http://localhost:5000/hello_world",
-      "type": "text",
-      "invokeOnFocus": false,
-      "addHotkey": true,
-      "debug": "verbose",
-      "userInterface": "insert-text",
-      "active":false
-    },
-    {
-      "name": "Convert to upper case",
-      "url": "http://localhost:5000/to_upper_case",
-      "type": "text",
-      "invokeOnFocus": false,
-      "addHotkey": true,
-      "debug": "verbose",
-      "userInterface": "replace-text",
-      "active":false
-
-    },
-    {
-      "name": "Random score similarity",
-      "url": "http://localhost:5000/random_list",
-      "type": "collection",
-      "invokeOnFocus": true,
-      "addHotkey": false,
-      "debug": "verbose",
-      "userInterface": "panel-right",
-      "active": true
-    }
-  ]
-}
-```
-
-### name
-
-The name of the command used in commands and widgets
-
-### url
-
-The address of the command in the python server
-
-### type
-
-What returns the script?
-
-Can be 'text', 'collection' or ['graph' to be implemented]
-
-### invokeOnFocus
-
-The plugin calls the script when opening a note.
-
-- _addHotKey_: A command is added to call the script
-- _debug_: verbose or off
-- _userInterface_: how the user interacts with the script, currently can be:
-  - 'panel-left': Attaches a panel on the left
-  - 'panel-right': Attaches a panel on the right
-  - 'replace-text': Replaces the selected text with the response (example: translate a paragraph)
-  - 'insert-text': Inserts text in the cursor position (example: insert a table of contents)
+TODO: Explain this.
 
 ## Build
 
