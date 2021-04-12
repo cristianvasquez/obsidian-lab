@@ -4,19 +4,20 @@ Say you have a terrific script to:
 
 - Find similar notes to the current one.
 - Translate a text.
-- Know what was your mood the last three months, just reading your Obsidian vault.
-- Whatever wonder you have under the sleeve :D
+- Write the summary of a note.
+- ....
 
-And you want to see if it's helpful in Obsidian without having to write a plugin.
+And you want to quicky see if it's helpful in Obsidian, just using some python.
 
 That is the purpose of this plugin!. 
 
-It's a plugin that calls a web app that executes the script, and then the results are shown in Obsidian
+This plugin uses a [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that executes scripts. This 
+plugin is the part that shows results in obsidian. 
 
 ## Why this plugin? Why not program all in Javascript?
 
-Unfortunately, the universal web language, JavaScript, doesn't have a mature suite of data science libraries, particularly Natural Language Processing.
-Sometimes, it is quicker to experiment in, for example, Python, and later, if you want, make it work in Javascript.
+Sometimes, it is quicker to experiment in, for example, Python, and later, if you want, make it work in Javascript. 
+This is specially true when using Natural Language Processing algorithms.
 
 ## Status
 
@@ -27,7 +28,7 @@ This is still a proof of concept, expect bugs
 Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
 exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples)
 
-Perhaps someone else wants to do write a similar one using javascript, rust, or whatever? :D
+Perhaps someone else wants to do write a similar one using javascript, rust, or something else? :D
 
 ## How it works?
 
@@ -130,6 +131,10 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 - [X] Add settings
   
 ## Apr 9: Application state
+
+- [X] Refactor
+
+## Apr 12: Review
 
 - [X] Refactor
 
