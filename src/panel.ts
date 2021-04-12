@@ -172,15 +172,18 @@ class LabPanel extends ItemView {
                 });
             } else if (String.isString(this.state.contents)) {
                 // Draw the contents as a list
-                const context = rootEl.createDiv({
+                rootEl.createDiv({
                     title: 'contents',
                     cls: 'python-lab-text',
                     text: this.state.contents,
                 });
             } else {
-                console.error('cannot draw', this.state)
+                rootEl.createDiv({
+                    title: 'contents',
+                    cls: 'python-lab-text',
+                    text: JSON.stringify(this.state,null,2),
+                });
             }
-
         }
 
         const contentEl = this.containerEl.children[1];

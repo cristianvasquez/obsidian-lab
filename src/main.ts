@@ -8,6 +8,7 @@ import {
     PluginSettingTab,
     Setting,
     WorkspaceLeaf,
+    ViewCreator,
 } from 'obsidian';
 import {ResultListView} from './panel';
 
@@ -160,109 +161,103 @@ export default class PythonLabPlugin extends Plugin {
     }
 
     private initCommand(name: string, command: Command) {
-        const caller = this.executeCommand();
-        if (this.settings.debug == 'verbose') {
-            console.log(`registering [${name}] as [${command.type}]`);
-        }
         let commandId: string = commandIdFromName(name);
         let commandUrl = this.commandUrlFromName(name);
+        if (this.settings.debug == 'verbose') {
+            console.log(`init [${name}] as [${command.type}]`);
+        }
 
-        const needsAPanel = command.type=='panel'
-        if (needsAPanel){
-
-            // I would love to know if this view is already registered, but I don't know how.
-            this.registerView(commandId, (leaf) => {
+        if (command.type=='panel') {
+            let viewCreator: ViewCreator = (leaf: WorkspaceLeaf) => {
                 let commandView = new ResultListView(
                     leaf,
                     commandId,
                     command.label,
                 );
-                const callback = caller(commandUrl, command, commandView);
+                const callbackWithView = async () => {
+                    const data = await this.doPost(commandUrl)
+                    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                    data.label = command.label;
+                    PythonLabPlugin.applyUpdatePanel(commandView, data);
+                }
                 this.addCommand({
                     id: commandId,
                     name: command.label,
-                    callback: () => callback(),
+                    callback: () => callbackWithView(),
                     hotkeys: [],
                 });
 
                 if (command.invokeOnOpen) {
-                    commandView.registerCallback(callback);
+                    commandView.registerCallback(callbackWithView);
                 }
                 return commandView;
-            });
-        } else {
-            const handleCall = caller(commandUrl, command, undefined);
+            };
+            // I would love to know if this view is already registered, but I don't know how.
+            this.registerView(commandId, viewCreator);
+        } else if (command.type=='insert-text' || command.type=='replace-text'){
+            const callbackWithoutView = () => {
+                const data = this.doPost(commandUrl)
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
+                    PythonLabPlugin.applyReplaceText(activeView, data);
+                } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
+                    PythonLabPlugin.applyInsertText(activeView, data);
+                } else {
+                    console.error(`Cannot process: `, command);
+                }
+            }
             this.addCommand({
                 id: commandId,
                 name: command.label,
-                callback: () => handleCall(),
+                callback: () => callbackWithoutView(),
                 hotkeys: [],
             });
         }
-        this.app.workspace.getLeafById(commandId);
-
     }
 
-    private executeCommand() {
+    private async doPost(command_url: string) {
+            let parameters = this.getPostParameters();
+            let requestBody = JSON.stringify(parameters);
 
-        return (
-            command_url: string,
-            command: Command,
-            commandView: CommandView,
-        ) => {
-            return async () => {
+            if (this.settings.debug == 'verbose') {
+                console.info('Post:', command_url);
+                console.info('requestBody', requestBody);
+            }
 
-                let parameters: Input = {
-                    vaultPath: this.getVaultPath(),
-                };
+            const response = await fetch(command_url, {
+                method: 'POST',
+                body: requestBody,
+                headers: {
+                    'content-type': 'application/json',
+                },
+            })
+            const data = await response.json()
+            if (this.settings.debug == 'verbose') {
+                console.info('response data', data);
+            }
+            if (data.errors) {
+                console.error(data);
+                new Notification(data.message);
+            }
+            return data
+    }
 
-                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (activeView) {
-                    const editor = activeView.editor
-                    let selectedText = editor.getSelection();
-                    if (selectedText) {
-                        parameters.text = selectedText;
-                    }
-                    if (activeView.file && activeView.file.path) {
-                        parameters.notePath = activeView.file.path;
-                    }
-                }
-
-                let requestBody = JSON.stringify(parameters);
-
-                if (this.settings.debug == 'verbose') {
-                    console.info('Exec:', command);
-                    console.info('requestBody', requestBody);
-                }
-
-                const response = await fetch(command_url, {
-                    method: 'POST',
-                    body: requestBody,
-                    headers: {
-                        'content-type': 'application/json',
-                    },
-                })
-                const data = await response.json()
-                if (this.settings.debug == 'verbose') {
-                    console.info('response data', data);
-                }
-                if (data.errors) {
-                    console.error(data);
-                    new Notification(data.message);
-                } else {
-                    if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
-                        PythonLabPlugin.applyReplaceText(activeView, data);
-                    } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
-                        PythonLabPlugin.applyInsertText(activeView, data);
-                    } else if (commandView) {
-                        data.label = command.label;
-                        PythonLabPlugin.applyUpdatePanel(commandView, data);
-                    } else {
-                        console.error(`Cannot process: `, command);
-                    }
-                }
-            };
+    private getPostParameters() {
+        let parameters: Input = {
+            vaultPath: this.getVaultPath(),
         };
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor
+            let selectedText = editor.getSelection();
+            if (selectedText) {
+                parameters.text = selectedText;
+            }
+            if (activeView.file && activeView.file.path) {
+                parameters.notePath = activeView.file.path;
+            }
+        }
+        return parameters;
     }
 
     private static applyUpdatePanel(commandView: CommandView, data: any) {
@@ -404,7 +399,6 @@ class PythonLabSettings extends PluginSettingTab {
             let commandEl = containerEl.createEl('div', {});
             let commandUrl = this.plugin.commandUrlFromName(name);
 
-
             const clz = command.active ? 'python-lab-activated' : 'python-lab-deactivated';
             new Setting(commandEl)
                 .setName(`${name}`)
@@ -446,7 +440,6 @@ class PythonLabSettings extends PluginSettingTab {
                             this.display();
                         })
                     })
-
 
                 new Setting(containerEl)
                     .setName('Additional triggers')
