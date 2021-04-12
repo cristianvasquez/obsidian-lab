@@ -1,14 +1,17 @@
 import {
     addIcon,
     App,
+    FileSystemAdapter,
+    MarkdownView,
+    Notice,
     Plugin,
     PluginSettingTab,
     Setting,
-    FileSystemAdapter,
-    Notice,
-    MarkdownView, WorkspaceLeaf,
+    WorkspaceLeaf,
 } from 'obsidian';
 import {ResultListView} from './panel';
+
+const COMMAND_PREFIX = 'obsidian_lab_'
 
 const DEFAULT_SETTINGS: Settings = {
     server_url: 'http://localhost:5000',
@@ -31,83 +34,67 @@ const DEFAULT_SETTINGS: Settings = {
         random_similarity: {
             active: true,
             label: 'Random score similarity',
-            type: 'collection-right-panel',
+            type: 'panel',
             invokeOnOpen: true,
         },
     },
 };
 
 
-class Static {
-
-    public static COMMAND_PREFIX = 'obsidian_lab_'
-
-    public static commandIdFromName(command_name: string): string {
-        return `${Static.COMMAND_PREFIX}${command_name}`;
-    }
-
-    public static getNameFromUrl(currentUrl: any) {
-        return currentUrl.substring(currentUrl.lastIndexOf('/') + 1);
-    }
-
-    public static isTextBased(command: Command) {
-        return command.type == 'replace-text' ||
-            command.type == 'insert-text';
-    }
-
-    public static isPanelBased(command: Command) {
-        return command.type == 'collection-left-panel' ||
-            command.type == 'collection-right-panel' ||
-            command.type == 'text-right-panel' ||
-            command.type == 'text-left-panel';
-    }
-
-    public static async getServerStatus(serverUrl: string) {
-        const result: ServerStatus = await fetch(serverUrl, {
-            method: 'GET',
-            headers: {
-                'content-type': 'application/json',
-            },
+async function getServerStatus(serverUrl: string) {
+    const result: ServerStatus = await fetch(serverUrl, {
+        method: 'GET',
+        headers: {
+            'content-type': 'application/json',
+        },
+    })
+        .then(function (response) {
+            return response.json();
         })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                const status: ServerStatus = {
-                    status: 'available',
-                    availableCommandUrls: data.scripts ? data.scripts : []
-                }
-                return status;
-            })
-            .catch(function (error) {
-                return {
-                    status: 'unavailable',
-                    availableCommandUrls: [],
-                    error: error
-                }
-            });
-        return result
-    }
-
-    public static expandCommands(commandUrls: string[], commandSettings: Record<string, Command>) {
-        let result: Map<string, Command> = new Map()
-        for (const commandURL of commandUrls) {
-            let commandName = Static.getNameFromUrl(commandURL);
-            if (commandSettings[commandName]) {
-                result.set(commandName, commandSettings[commandName])
-            } else {
-                result.set(commandName, {
-                    label: commandName,
-                    type: 'insert-text',
-                    active: false,
-                    invokeOnOpen: false,
-                })
+        .then(function (data) {
+            const status: ServerStatus = {
+                status: 'available',
+                availableCommandUrls: data.scripts ? data.scripts : []
             }
-        }
-        return result;
-    }
+            return status;
+        })
+        .catch(function (error) {
+            return {
+                status: 'unavailable',
+                availableCommandUrls: [],
+                error: error
+            }
+        });
+    return result
 }
 
+function commandIdFromName(command_name: string): string {
+    return `${COMMAND_PREFIX}${command_name}`;
+}
+
+function getNameFromUrl(currentUrl: any) {
+    return currentUrl.substring(currentUrl.lastIndexOf('/') + 1);
+}
+
+function expandCommands(commandUrls: string[], commandSettings: Record<string, Command>) {
+    let result: Map<string, Command> = new Map()
+    for (const commandURL of commandUrls) {
+        let commandName = getNameFromUrl(commandURL);
+        if (commandSettings[commandName]) {
+            // If command settings are already stored
+            result.set(commandName, commandSettings[commandName])
+        } else {
+            // Otherwise use the default one
+            result.set(commandName, {
+                label: commandName,
+                type: 'insert-text',
+                active: false,
+                invokeOnOpen: false,
+            })
+        }
+    }
+    return result;
+}
 
 export default class PythonLabPlugin extends Plugin {
     public settings: Settings;
@@ -123,6 +110,44 @@ export default class PythonLabPlugin extends Plugin {
         return this.app.vault.adapter.getBasePath();
     }
 
+    public async loadCommandPanes(): Promise<void> {
+
+        await this.loadSettings();
+        const serverStatus = await getServerStatus(this.settings.server_url)
+
+        // Detach panes
+        // Disclaimer: I still cannot figure out how to detach or unregister all leaves produced by this plugin
+        // The intention here is to clean all leaves of created by the lab
+        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
+            if (leaf.getViewState().type.startsWith(COMMAND_PREFIX)) {
+                if (this.settings.debug=='verbose'){
+                    console.log('detaching',leaf.getViewState().type)
+                }
+                leaf.detach();
+            }
+        });
+
+        if (serverStatus.status == 'available') {
+            const availableCommands: Map<string, Command> = expandCommands(serverStatus.availableCommandUrls, this.settings.commands)
+            for (let [name, command] of availableCommands) {
+
+                if (command.active) {
+                    this.initCommand(name, command)
+                }
+            }
+            const init: () => any = this.initViews(availableCommands)
+            if (this.app.workspace.layoutReady) {
+                init();
+            } else {
+                this.app.workspace.onLayoutReady(init)
+            }
+        } else {
+            new Notice('Lab: Cannot reach server')
+            if (this.settings.debug == 'verbose') {
+                console.log(serverStatus)
+            }
+        }
+    }
 
     public async onload(): Promise<void> {
         console.log('loading python lab plugin');
@@ -130,68 +155,43 @@ export default class PythonLabPlugin extends Plugin {
         addIcon('sweep', sweepIcon);
         addIcon('lab', labIcon);
 
-        await this.loadSettings();
-
-        const serverStatus = await Static.getServerStatus(this.settings.server_url)
-
-
-        let initLeaves = function (availableCommands: Map<string, Command>) {
-            const init: () => any = this.initCommandViews(availableCommands)
-            if (this.app.workspace.layoutReady) {
-                init();
-            } else {
-                this.registerEvent(this.app.workspace.on('layout-ready', init));
-            }
-        };
-        if (serverStatus.status == 'available') {
-            const availableCommands: Map<string, Command> = Static.expandCommands(serverStatus.availableCommandUrls, this.settings.commands)
-            for (let [name, command] of availableCommands) {
-                if (command.active) {
-                    this.initCommand(name, command)
-                }
-            }
-            initLeaves.call(this, availableCommands);
-        } else {
-            new Notice('Lab: Cannot reach server')
-            if (this.settings.debug == 'verbose') {
-                console.log(serverStatus)
-            }
-            initLeaves.call(this, new Map());
-        }
-
+        this.loadCommandPanes();
         this.addSettingTab(new PythonLabSettings(this.app, this));
     }
 
     private initCommand(name: string, command: Command) {
-        const buildExecute = this.executeCommand();
+        const caller = this.executeCommand();
         if (this.settings.debug == 'verbose') {
             console.log(`registering [${name}] as [${command.type}]`);
         }
-        let commandId: string = Static.commandIdFromName(name);
+        let commandId: string = commandIdFromName(name);
         let commandUrl = this.commandUrlFromName(name);
-        if (Static.isPanelBased(command)) {
+
+        const needsAPanel = command.type=='panel'
+        if (needsAPanel){
+
+            // I would love to know if this view is already registered, but I don't know how.
             this.registerView(commandId, (leaf) => {
                 let commandView = new ResultListView(
                     leaf,
                     commandId,
                     command.label,
                 );
-                const handleCall = buildExecute(commandUrl, command, commandView);
+                const callback = caller(commandUrl, command, commandView);
                 this.addCommand({
                     id: commandId,
                     name: command.label,
-                    callback: () => handleCall(),
+                    callback: () => callback(),
                     hotkeys: [],
                 });
 
                 if (command.invokeOnOpen) {
-                    commandView.registerCallback(handleCall);
+                    commandView.registerCallback(callback);
                 }
                 return commandView;
             });
-
-        } else if (Static.isTextBased(command)) {
-            const handleCall = buildExecute(commandUrl, command, undefined);
+        } else {
+            const handleCall = caller(commandUrl, command, undefined);
             this.addCommand({
                 id: commandId,
                 name: command.label,
@@ -199,13 +199,13 @@ export default class PythonLabPlugin extends Plugin {
                 hotkeys: [],
             });
         }
+        this.app.workspace.getLeafById(commandId);
+
     }
 
     private executeCommand() {
 
-        const debugEnabled = this.settings.debug == 'verbose'
-
-        const result = (
+        return (
             command_url: string,
             command: Command,
             commandView: CommandView,
@@ -215,9 +215,10 @@ export default class PythonLabPlugin extends Plugin {
                 let parameters: Input = {
                     vaultPath: this.getVaultPath(),
                 };
-                const activeView = this.app.workspace.activeLeaf.view;
-                if (activeView instanceof MarkdownView) {
-                    const editor = activeView.sourceMode.cmEditor;
+
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (activeView) {
+                    const editor = activeView.editor
                     let selectedText = editor.getSelection();
                     if (selectedText) {
                         parameters.text = selectedText;
@@ -229,48 +230,39 @@ export default class PythonLabPlugin extends Plugin {
 
                 let requestBody = JSON.stringify(parameters);
 
-                if (debugEnabled) {
+                if (this.settings.debug == 'verbose') {
                     console.info('Exec:', command);
                     console.info('requestBody', requestBody);
                 }
 
-                fetch(command_url, {
+                const response = await fetch(command_url, {
                     method: 'POST',
                     body: requestBody,
                     headers: {
                         'content-type': 'application/json',
                     },
                 })
-                    .then(function (response) {
-                        return response.json();
-                    })
-                    .then(function (data) {
-                        if (debugEnabled) {
-                            console.info('response data', data);
-                        }
-                        if (data.errors) {
-                            console.error(data);
-                            new Notification(data.message);
-                        } else {
-                            if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
-                                PythonLabPlugin.applyReplaceText(activeView, data);
-                            } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
-                                PythonLabPlugin.applyInsertText(activeView, data);
-                            } else if (commandView) {
-                                data.label = command.label;
-                                PythonLabPlugin.applyUpdatePanel(commandView, data);
-                            } else {
-                                console.error(`Cannot process: `, command);
-                            }
-                        }
-                    })
-                    .catch(function (error) {
-                        console.error(error);
-                        new Notice(`[${command.label}]. ${error.message}`);
-                    });
+                const data = await response.json()
+                if (this.settings.debug == 'verbose') {
+                    console.info('response data', data);
+                }
+                if (data.errors) {
+                    console.error(data);
+                    new Notification(data.message);
+                } else {
+                    if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
+                        PythonLabPlugin.applyReplaceText(activeView, data);
+                    } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
+                        PythonLabPlugin.applyInsertText(activeView, data);
+                    } else if (commandView) {
+                        data.label = command.label;
+                        PythonLabPlugin.applyUpdatePanel(commandView, data);
+                    } else {
+                        console.error(`Cannot process: `, command);
+                    }
+                }
             };
         };
-        return result;
     }
 
     private static applyUpdatePanel(commandView: CommandView, data: any) {
@@ -281,13 +273,15 @@ export default class PythonLabPlugin extends Plugin {
 
     private static applyInsertText(activeView: MarkdownView, data: any) {
         // Insert content in the cursor position
-        const editor = activeView.sourceMode.cmEditor;
-        editor.replaceSelection(data.contents, 'start');
+        let doc = activeView.editor.getDoc();
+        let cursor = doc.getCursor();
+        doc.replaceRange(data.contents, cursor);
     }
 
     private static applyReplaceText(activeView: MarkdownView, data: any) {
         // Replaces the current selection
-        const editor = activeView.sourceMode.cmEditor;
+        // const editor = activeView.sourceMode.cmEditor;
+        const editor = activeView.editor
         editor.replaceSelection(data.contents);
     }
 
@@ -302,55 +296,29 @@ export default class PythonLabPlugin extends Plugin {
     /**
      * Init all commands
      */
-    private initCommandViews = (commands: Map<string, Command>) => {
-
-        const result = () => {
-            this.clearLabLeaves();
-
+    private initViews = (commands: Map<string, Command>) => {
+        return () => {
             // Attach only commands that are panel based.
             for (let [name, command] of commands) {
-                if (command.active && Static.isPanelBased(command)) {
-                    let commandId: string = Static.commandIdFromName(name);
-                    this.initCommandView(commandId, command);
+                if ( command.type=='panel' && command.active) {
+                    let commandId: string = commandIdFromName(name);
+                    this.showPanel(commandId);
                 }
             }
-
         };
-        return result;
     }
 
-    private clearLabLeaves() {
-        //Disclaimer: I still cannot figure out how 'groups' work by just looking at the API signature
-        // The intention here is to clean all leaves of created by the lab
-        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
-            if (leaf.getViewState().type.startsWith(Static.COMMAND_PREFIX)) {
-                leaf.detach();
-            }
-        });
-    }
+    private async showPanel(commandId: string) {
 
-    private async initCommandView(commandId: string, command: Command) {
         const existing = this.app.workspace.getLeavesOfType(commandId);
         if (existing.length) {
             this.app.workspace.revealLeaf(existing[0]);
             return;
         }
-        if (command.type == 'collection-left-panel' || command.type == 'text-left-panel') {
-            await this.app.workspace.getLeftLeaf(false).setViewState({
-                type: commandId,
-                // group:'lab',
-                active: true,
-            });
-        } else if (command.type == 'collection-right-panel' || command.type == 'text-right-panel') {
-            await this.app.workspace.getRightLeaf(false).setViewState({
-                type: commandId,
-                // group:'lab',
-                active: true,
-            });
-        } else {
-            console.error('Not implemented for', commandId, command)
-        }
-
+        await this.app.workspace.getRightLeaf(false).setViewState({
+            type: commandId,
+            active: true,
+        });
     }
 
 }
@@ -379,23 +347,25 @@ class PythonLabSettings extends PluginSettingTab {
 
         const serverURLSetting = new Setting(this.containerEl)
             .setName('Server url')
-            .setDesc('Run a server like')
+            .setDesc('')
             .addText((text) => {
                 text.setValue(settings.server_url);
                 text.onChange(async (value) => {
                     this.plugin.settings.server_url = value as string;
-                    await this.plugin.saveSettings();
+                    // await this.plugin.saveSettings();
                     // How to maintain focus on this?
                     // this.display();
                 })
             }).addButton((button) =>
-                button.setButtonText("Refresh").onClick(async () => {
+                button.setButtonText("set and refresh").onClick(async () => {
+                    await this.plugin.saveSettings();
+                    await this.plugin.loadCommandPanes()
                     this.display();
                 })
             );
 
 
-        const updateCommand = async (commandName: string, command: Command) => {
+        const updateSetting = async (commandName: string, command: Command) => {
             this.plugin.settings.commands[commandName] = command;
             if (this.plugin.settings.debug == 'verbose') {
                 console.log('save', command);
@@ -404,15 +374,15 @@ class PythonLabSettings extends PluginSettingTab {
         };
 
 
-        Static.getServerStatus(settings.server_url).then((serverStatus) => {
+        getServerStatus(settings.server_url).then((serverStatus) => {
             if (serverStatus.status == 'available') {
-                const availableCommands = Static.expandCommands(serverStatus.availableCommandUrls, settings.commands)
+                const availableCommands = expandCommands(serverStatus.availableCommandUrls, settings.commands)
                 let n = 0
                 for (let [name, command] of availableCommands) {
                     addCommandSetting(name, command)
                     n++
                 }
-                serverURLSetting.setName(`Online [${n}]`);
+                serverURLSetting.setName(`Server online [${n}]`);
             } else {
                 serverURLSetting
                     .setName('⚠ Cannot reach server')
@@ -444,7 +414,7 @@ class PythonLabSettings extends PluginSettingTab {
                     toggle.setValue(command.active);
                     toggle.onChange(async (value) => {
                         command.active = value as boolean;
-                        await updateCommand(name, command);
+                        await updateSetting(name, command);
                         this.display();
                     });
                 });
@@ -458,30 +428,21 @@ class PythonLabSettings extends PluginSettingTab {
                         text.setValue(command.label);
                         text.onChange(async (value) => {
                             command.label = value as string;
-                            await updateCommand(name, command);
+                            await updateSetting(name, command);
                         });
                     })
                     // Type
                     .addDropdown((dropdown) => {
                         dropdown.addOption('insert-text', 'insert text');
                         dropdown.addOption('replace-text', 'replace selected text');
-                        dropdown.addOption('collection-left-panel', 'items in left panel');
-                        dropdown.addOption(
-                            'collection-right-panel',
-                            'items in right panel',
-                        );
-                        dropdown.addOption('text-left-panel', 'left panel text');
-                        dropdown.addOption('text-right-panel', 'right panel text');
+                        dropdown.addOption('panel', 'items or text in a panel');
                         // dropdown.addOption('graph', 'a graph');
                         dropdown.setValue(String(command.type)).onChange(async (value) => {
                             command.type = value as
-                                | 'collection-left-panel'
-                                | 'collection-right-panel'
-                                | 'text-left-panel'
-                                | 'text-right-panel'
+                                | 'panel'
                                 | 'replace-text'
                                 | 'insert-text';
-                            await updateCommand(name, command);
+                            await updateSetting(name, command);
                             this.display();
                         })
                     })
@@ -495,7 +456,7 @@ class PythonLabSettings extends PluginSettingTab {
                         dropdown.addOption('true', 'when opening a file');
                         dropdown.setValue(String(command.invokeOnOpen)).onChange(async (value) => {
                             command.invokeOnOpen = value == 'true'
-                            await updateCommand(name, command);
+                            await updateSetting(name, command);
                             this.display();
                         });
                     });
@@ -522,12 +483,14 @@ class PythonLabSettings extends PluginSettingTab {
                 });
             });
 
+
+        containerEl.createEl('a', {
+            text: 'You can find a simple server at github: obsidian-lab-py',
+            href: 'https://github.com/cristianvasquez/obsidian-lab-py'
+        });
+
         containerEl.createEl('p', {
             text: 'Pull requests are both welcome and appreciated. :)',
-        });
-        containerEl.createEl('a', {
-            text: 'Server github: obsidian-lab-py',
-            href: 'https://github.com/cristianvasquez/obsidian-lab-py'
         });
     }
 }

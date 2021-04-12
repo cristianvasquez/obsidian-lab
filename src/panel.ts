@@ -28,6 +28,7 @@ class LabPanel extends ItemView {
 
     public setData(state: PanelState) {
         this.state = state;
+        this.redraw();
     }
 
     public getViewType(): string {

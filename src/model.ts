@@ -19,10 +19,7 @@ type Command = {
     active: boolean;
     label: string;
     type:
-        | 'collection-left-panel'
-        | 'collection-right-panel'
-        | 'text-left-panel'
-        | 'text-right-panel'
+        | 'panel'
         | 'replace-text'
         | 'insert-text';
     invokeOnOpen: boolean;
