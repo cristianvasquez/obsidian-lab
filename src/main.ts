@@ -169,16 +169,17 @@ export default class PythonLabPlugin extends Plugin {
 
         if (command.type=='panel') {
             let viewCreator: ViewCreator = (leaf: WorkspaceLeaf) => {
-                let commandView = new ResultListView(
+                let panel = new ResultListView(
                     leaf,
                     commandId,
                     command.label,
                 );
                 const callbackWithView = async () => {
                     const data = await this.doPost(commandUrl)
-                    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                     data.label = command.label;
-                    PythonLabPlugin.applyUpdatePanel(commandView, data);
+                    // Update the state of the view panel
+                    panel.setData(data);
+                    panel.redraw();
                 }
                 this.addCommand({
                     id: commandId,
@@ -188,20 +189,26 @@ export default class PythonLabPlugin extends Plugin {
                 });
 
                 if (command.invokeOnOpen) {
-                    commandView.registerCallback(callbackWithView);
+                    panel.registerCallback(callbackWithView);
                 }
-                return commandView;
+                return panel;
             };
             // I would love to know if this view is already registered, but I don't know how.
             this.registerView(commandId, viewCreator);
         } else if (command.type=='insert-text' || command.type=='replace-text'){
-            const callbackWithoutView = () => {
-                const data = this.doPost(commandUrl)
+            const callbackWithoutView = async () => {
+                const data = await this.doPost(commandUrl)
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (command.type == 'replace-text' && activeView instanceof MarkdownView) {
-                    PythonLabPlugin.applyReplaceText(activeView, data);
+                    // Replaces the current selection
+                    // const editor = activeView.sourceMode.cmEditor;
+                    const editor = activeView.editor
+                    editor.replaceSelection(data.contents);
                 } else if (command.type == 'insert-text' && activeView instanceof MarkdownView) {
-                    PythonLabPlugin.applyInsertText(activeView, data);
+                    // Insert content in the cursor position
+                    let doc = activeView.editor.getDoc();
+                    let cursor = doc.getCursor();
+                    doc.replaceRange(data.contents, cursor);
                 } else {
                     console.error(`Cannot process: `, command);
                 }
@@ -258,26 +265,6 @@ export default class PythonLabPlugin extends Plugin {
             }
         }
         return parameters;
-    }
-
-    private static applyUpdatePanel(commandView: CommandView, data: any) {
-        // Update the state of the view panel
-        commandView.setData(data);
-        commandView.redraw();
-    }
-
-    private static applyInsertText(activeView: MarkdownView, data: any) {
-        // Insert content in the cursor position
-        let doc = activeView.editor.getDoc();
-        let cursor = doc.getCursor();
-        doc.replaceRange(data.contents, cursor);
-    }
-
-    private static applyReplaceText(activeView: MarkdownView, data: any) {
-        // Replaces the current selection
-        // const editor = activeView.sourceMode.cmEditor;
-        const editor = activeView.editor
-        editor.replaceSelection(data.contents);
     }
 
     public async loadSettings(): Promise<void> {

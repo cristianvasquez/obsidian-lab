@@ -16,8 +16,7 @@ plugin is the part that shows results in obsidian.
 
 ## Why this plugin? Why not program all in Javascript?
 
-Sometimes, it is quicker to experiment in, for example, Python, and later, if you want, make it work in Javascript. 
-This is specially true when using Natural Language Processing algorithms.
+Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript. This is especially true when using Natural Language Processing libraries
 
 ## Status
 

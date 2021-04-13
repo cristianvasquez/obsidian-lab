@@ -96,6 +96,7 @@ class LabPanel extends ItemView {
         const openFile = this.app.workspace.getActiveFile();
 
         const rootEl = createDiv({cls: 'nav-folder mod-root'});
+
         // Label of the panel
         if (this.state.label) {
             const context = rootEl.createDiv({
