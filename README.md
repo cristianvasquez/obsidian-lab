@@ -20,14 +20,18 @@ Sometimes is quicker to experiment in Python and later, if you want, make it wor
 
 ## Status
 
-This is still a proof of concept, expect bugs
+This is still a proof of concept, expect bugs.
 
-## Requirement
+## How to use?
 
-Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
-exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples)
+1. Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
+exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples).
 
-Perhaps someone else wants to do write a similar one using javascript, rust, or other language? :D
+2. Install the plugin.
+
+3. Activate the services in the settings tab.
+
+4. Restart the app.
 
 ## How it works?
 
@@ -78,14 +82,11 @@ Currently there are four ways of interaction implemented:
 
 ## Config
 
-Configuring the plugin currently is done via the settings, where you specify what is triggered, how is it shown, 
-etc...
+Configuring the plugin currently is done via the settings, where you specify for each service it's name, how is are shown and what triggers it.
 
 ![Example settings](./docs/options.png)
 
-
-
-TODO: Give an example.
+The settings pane will show options only if it has a response from the server. Any change in the options will persist in the plugin configuration. 
 
 ## Build
 
@@ -97,11 +98,9 @@ is built like all the other plugins,
 
 2.  Install the dependencies
 
-
     yarn install
 
 3.  build the app
-
 
     yarn build
 
@@ -146,14 +145,21 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 -   [x] Refactor
 
-## Apr 12: Review
+## Apr 12: Review before publishing
 
 -   [x] Refactor
 
-## Apr 21: Add new view
+## Apr 21: Add chat view
 
 -   [x] Add chat and command view.
 
 ## TODO
 
 -   [ ] Choose an different icon for the services.
+
+
+# Contributing
+
+Perhaps someone else wants to do write a similar one using javascript, rust, or other language? :D
+
+Pull requests are both, welcome and appreciated
