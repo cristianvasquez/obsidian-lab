@@ -1,6 +1,6 @@
 {
-  "id": "obsidian-lab-plugin",
-  "name": "Lab plugin",
+  "id": "python-lab-plugin",
+  "name": "Python lab plugin",
   "version": "0.2.3",
   "minAppVersion": "0.11.6",
   "description": "An interface to experiment with python scripts and more.",

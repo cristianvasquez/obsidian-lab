@@ -27,7 +27,7 @@ This is still a proof of concept, expect bugs
 Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
 exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples)
 
-Perhaps someone else wants to do write a similar one using javascript, rust, or something else? :D
+Perhaps someone else wants to do write a similar one using javascript, rust, or other language? :D
 
 ## How it works?
 
@@ -136,50 +136,10 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 -   [x] Refactor
 
+## Apr 21: Add new view
+
+-   [x] Add chat and command view.
+
 ## TODO
 
--   [ ] Add graph clustering handler
-
-\_
-
-/|
-
-/
-//
-///
-////
-/////
-
-# Hello
-
-Wasshaaap elmano
-
-    $$\begin{aligned}
-    		& y_{it} = \mu_i + x_{it}
-    		\\
-    		& x_{it} = \phi_i x_{i,t-1} + e_{it}
-    \end{aligned}$$
-
-    $$
-    \begin{aligned}
-    		& y_{it} = \mu_i + x_{it}
-    		\\
-    		& x_{it} = \phi_i x_{i,t-1} + e_{it}
-    \end{aligned}
-    $$
-
-1.  Hello
-    1.  This
-        1.  Is
-        2.  Another
-    2.  Test
-2.  Test
-
-## Hello
-
-| **A** | \*\*B\*\* | \*\*C\*\* |
-| ----: | :-------- | --------- |
-|     a | b         | c         |
-|     x | y         | z         |
-
-\#
+-   [X] Choose the icon.
