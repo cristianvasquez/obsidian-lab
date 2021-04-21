@@ -11,7 +11,7 @@ And you want to quicky see if it's helpful in Obsidian, just using some python.
 
 That is the purpose of this plugin!. 
 
-This plugin uses a [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that executes scripts. This 
+There is a server [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that exposes and executes the scripts. This 
 plugin is the part that shows results in obsidian. 
 
 ## Why this plugin? Why not program all in Javascript?
