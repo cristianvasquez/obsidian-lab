@@ -67,7 +67,7 @@ And gets a JSON response
 
 ## Interaction
 
-Currently has four ways of interaction:
+Currently there are four ways of interaction implemented:
 
 1. Insert text.
 2. Replace text.
@@ -156,4 +156,4 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 ## TODO
 
--   [X] Choose the icon.
+-   [ ] Choose an different icon for the services.
