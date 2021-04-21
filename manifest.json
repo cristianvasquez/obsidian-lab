@@ -3,7 +3,7 @@
   "name": "Lab plugin",
   "version": "0.2.2",
   "minAppVersion": "0.11.6",
-  "description": "An interface to experiment with python scripts",
+  "description": "An interface to experiment with python scripts and more.",
   "author": "Cristian Vasquez",
   "isDesktopOnly": false,
   "repo":"cristianvasquez/obsidian-lab"

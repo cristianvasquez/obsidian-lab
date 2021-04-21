@@ -2,10 +2,10 @@
 
 Say you have a terrific script to:
 
-- Find similar notes to the current one.
-- Translate a text.
-- Write the summary of a note.
-- ....
+-   Find similar notes to the current one.
+-   Translate a text.
+-   Write the summary of a note.
+-   ....
 
 And you want to quicky see if it's helpful in Obsidian, just using some python.
 
@@ -31,9 +31,9 @@ Perhaps someone else wants to do write a similar one using javascript, rust, or 
 
 ## How it works?
 
-1. The plugin makes a call using POST.
+1.  The plugin makes a call using POST.
 
-> POST: http://127.0.0.1:5000/scripts/some_list
+> POST: <http://127.0.0.1:5000/scripts/some_list>
 
 ```json
 {
@@ -41,6 +41,7 @@ Perhaps someone else wants to do write a similar one using javascript, rust, or 
   "notePath": "snippets-plugin/Test1.md"
 }
 ```
+
 And gets a JSON response
 
 > Response
@@ -60,7 +61,7 @@ And gets a JSON response
 }
 ```
 
-2. The plugin panel is populated with the JSON response.
+2.  The plugin panel is populated with the JSON response.
 
 ![Example widget](./docs/example.png)
 
@@ -76,21 +77,19 @@ TODO: Give an example.
 
 is built like all the other plugins,
 
-1. Clone this repo into
+1.  Clone this repo into
 
 /{vault}/.obsidian/plugins
 
-2. Install the dependencies
+2.  Install the dependencies
 
-```
-yarn install
-```
 
-3. build the app
+    yarn install
 
-```
-yarn build
-```
+3.  build the app
+
+
+    yarn build
 
 This will build the main file; that Obsidian should detect. Activate the plugin from inside Obsidian, in community plugins
 
@@ -98,45 +97,89 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 ## Mar 28: POC, Get similar notes to the current one.
 
-- [x] Proof of concept
-- [x] Run commands directly
-- [x] Python example.
-- [x] Javascript example.
+-   [x] Proof of concept
+-   [x] Run commands directly
+-   [x] Python example.
+-   [x] Javascript example.
 
 ## Apr 1: Multiple experiments
 
-- [x] Multiple experiments
-- [x] Text panel
-- [x] Result list panel
-- [x] Experiment commands
+-   [x] Multiple experiments
+-   [x] Text panel
+-   [x] Result list panel
+-   [x] Experiment commands
 
 ## Apr 5: HTTP Calls
 
-- [x] HTTP calls
-- [x] Python plugin system
-- [x] Add text handler
-- [x] Readme
+-   [x] HTTP calls
+-   [x] Python plugin system
+-   [x] Add text handler
+-   [x] Readme
 
 ## Apr 6: Command line
 
-- [X] Parametrized python server
+-   [x] Parametrized python server
 
 ## Apr 7: Split in two
 
-- [X] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
+-   [x] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
 
 ## Apr 8: Settings
 
-- [X] Add settings
-  
+-   [x] Add settings
+
 ## Apr 9: Application state
 
-- [X] Refactor
+-   [x] Refactor
 
 ## Apr 12: Review
 
-- [X] Refactor
+-   [x] Refactor
 
 ## TODO
 
-- [ ] Add graph clustering handler
+-   [ ] Add graph clustering handler
+
+\_
+
+/|
+
+/
+//
+///
+////
+/////
+
+# Hello
+
+Wasshaaap elmano
+
+    $$\begin{aligned}
+    		& y_{it} = \mu_i + x_{it}
+    		\\
+    		& x_{it} = \phi_i x_{i,t-1} + e_{it}
+    \end{aligned}$$
+
+    $$
+    \begin{aligned}
+    		& y_{it} = \mu_i + x_{it}
+    		\\
+    		& x_{it} = \phi_i x_{i,t-1} + e_{it}
+    \end{aligned}
+    $$
+
+1.  Hello
+    1.  This
+        1.  Is
+        2.  Another
+    2.  Test
+2.  Test
+
+## Hello
+
+| **A** | \*\*B\*\* | \*\*C\*\* |
+| ----: | :-------- | --------- |
+|     a | b         | c         |
+|     x | y         | z         |
+
+\#
