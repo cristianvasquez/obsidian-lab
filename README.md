@@ -61,16 +61,30 @@ And gets a JSON response
 }
 ```
 
-2.  The plugin panel is populated with the JSON response.
+2.  An obsidian widget is populated with the JSON response.
 
 ![Example widget](./docs/example.png)
+
+## Interaction
+
+Currently has four ways of interaction:
+
+1. Insert text.
+2. Replace text.
+3. Show elements in a panel.
+4. A chat or command line.
+
+![Example widget](./docs/chat.png)
 
 ## Config
 
 Configuring the plugin currently is done via the settings, where you specify what is triggered, how is it shown, 
 etc...
 
-![Example settings](./docs/settings_example.png)
+![Example settings](./docs/options.png)
+
+
+
 TODO: Give an example.
 
 ## Build
