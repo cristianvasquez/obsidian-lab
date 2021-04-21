@@ -246,8 +246,10 @@ export default class PythonLabPlugin extends Plugin {
         ) {
           // Replaces the current selection
           // const editor = activeView.sourceMode.cmEditor;
-          const editor = activeView.editor;
-          editor.replaceSelection(data.contents);
+          if (data.contents){
+            const editor = activeView.editor;
+            editor.replaceSelection(data.contents);
+          }
         } else if (
           command.type == 'insert-text' &&
           activeView instanceof MarkdownView
@@ -255,7 +257,9 @@ export default class PythonLabPlugin extends Plugin {
           // Insert content in the cursor position
           let doc = activeView.editor.getDoc();
           let cursor = doc.getCursor();
-          doc.replaceRange(data.contents, cursor);
+          if (data.contents){
+            doc.replaceRange(data.contents, cursor);
+          }
         } else {
           console.error(`Cannot process: `, command);
         }

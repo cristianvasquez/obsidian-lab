@@ -1,4 +1,4 @@
-# Obsidian lab plugin
+# Obsidian Python lab plugin
 
 Say you have a terrific script to:
 
@@ -22,16 +22,35 @@ Sometimes is quicker to experiment in Python and later, if you want, make it wor
 
 This is still a proof of concept, expect bugs.
 
-## How to use?
+## Quick start
 
-1. Install and run a web server, such as [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that 
-exposes python [scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples).
+1. Write a script somewhere (or copy one of the [examples](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples) )
 
-2. Install the plugin.
+```python
+class Plugin:
+    def __init__(self, *args, **kwargs):        
+        super()
 
-3. Activate the services in the settings tab.
+    def execute(self, args):
+        return {
+            'contents': f'Hello world!'
+        }
+```
 
-4. Restart the app.
+2. Run a [flask application](https://github.com/cristianvasquez/obsidian-lab-py), that exposes the script.
+
+![Server](./docs/server.png)
+
+
+3. Install the plugin.
+
+4. Activate the script in the settings tab / restart
+
+![Options](./docs/configure.png)
+
+5. Use it!
+
+![Use it](./docs/use.png)
 
 ## How it works?
 
@@ -67,8 +86,6 @@ And gets a JSON response
 
 2.  An obsidian widget is populated with the JSON response.
 
-![Example widget](./docs/example.png)
-
 ## Interaction
 
 Currently there are four ways of interaction implemented:
@@ -82,11 +99,7 @@ Currently there are four ways of interaction implemented:
 
 ## Config
 
-Configuring the plugin currently is done via the settings, where you specify for each service it's name, how is are shown and what triggers it.
-
-![Example settings](./docs/options.png)
-
-The settings pane will show options only if it has a response from the server. Any change in the options will persist in the plugin configuration. 
+Configuring the plugin currently is done via the settings, and can only works when the server is up. Here you specify the service's names and how it interacts with the user. Any change in the options will persist in the plugin configuration. 
 
 ## Build
 
