@@ -24,7 +24,9 @@ This is still a proof of concept, expect bugs.
 
 ## Quick start
 
-1. Write a script somewhere (or copy one of the [examples](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples) )
+1. Install the plugin. (Maybe you already did)
+
+2. Write a script somewhere (or copy one of the [examples](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples) )
 
 ```python
 class Plugin:
@@ -37,12 +39,9 @@ class Plugin:
         }
 ```
 
-2. Run a [flask application](https://github.com/cristianvasquez/obsidian-lab-py), that exposes the script.
+3. Run a [flask application](https://github.com/cristianvasquez/obsidian-lab-py), that exposes the script.
 
 ![Server](./docs/server.png)
-
-
-3. Install the plugin.
 
 4. Activate the script in the settings tab / restart
 
@@ -169,7 +168,6 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 ## TODO
 
 -   [ ] Choose an different icon for the services.
-
 
 # Contributing
 
