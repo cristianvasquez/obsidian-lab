@@ -51,6 +51,18 @@ class Plugin:
 
 ![Use it](./docs/use.png)
 
+
+## Interaction
+
+Currently there are four ways of interaction implemented:
+
+1. Insert text.
+2. Replace text.
+3. Show elements in a panel.
+4. A chat or command line.
+
+![Example widget](./docs/chat.png)
+
 ## How it works?
 
 1.  The plugin makes a call using POST.
@@ -84,17 +96,6 @@ And gets a JSON response
 ```
 
 2.  An obsidian widget is populated with the JSON response.
-
-## Interaction
-
-Currently there are four ways of interaction implemented:
-
-1. Insert text.
-2. Replace text.
-3. Show elements in a panel.
-4. A chat or command line.
-
-![Example widget](./docs/chat.png)
 
 ## Config
 
