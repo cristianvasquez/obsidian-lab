@@ -4,10 +4,10 @@ import LabView from './labView';
 
 
 // This chat widget is based on the 'dual' prototype.
-// that I found pretty.
+// I found it pretty.
 // https://github.com/Psionica/Dual/blob/master/vault-replica/.obsidian/plugins/Dual/view.ts
 
-export default class CommandLineView extends LabView {
+export default class ChatView extends LabView {
   private onSendMessage: () => Promise<void>;
   private lastInput: string;
   private status:string;

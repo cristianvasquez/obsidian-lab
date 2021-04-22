@@ -15,6 +15,7 @@
     "@rollup/plugin-commonjs": "^15.1.0",
     "@rollup/plugin-node-resolve": "^9.0.0",
     "@rollup/plugin-typescript": "^6.1.0",
+    "@types/core-js": "^2.5.4",
     "@types/node": "^14.14.2",
     "@typescript-eslint/eslint-plugin": "4.6.0",
     "@typescript-eslint/parser": "4.6.0",
@@ -27,10 +28,9 @@
     "obsidian": "https://github.com/obsidianmd/obsidian-api",
     "rollup": "^2.32.1",
     "tslib": "^2.0.3",
-    "typescript": "^4.0.3",
-    "@types/core-js": "^2.5.4"
+    "typescript": "^4.0.3"
   },
   "dependencies": {
-
+    "@mdi/js": "^5.9.55"
   }
 }

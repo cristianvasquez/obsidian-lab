@@ -166,9 +166,9 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 -   [x] Add chat and command view.
 
-## TODO
+## Apr 22: Add icons
 
--   [ ] Choose an different icon for the services.
+-   [X] Choose icons for the services.
 
 # Contributing
 

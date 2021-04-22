@@ -1,6 +1,4 @@
-import { from } from 'core-js/core/array';
 import {
-  ItemView,
   Menu,
   WorkspaceLeaf,
   FileSystemAdapter,
