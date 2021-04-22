@@ -18,6 +18,10 @@ plugin is the part that shows results in obsidian.
 
 Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript. This is especially true when using Natural Language Processing libraries
 
+## Forum
+
+This repo has github [discussions](https://github.com/cristianvasquez/obsidian-lab/discussions) enabled.
+
 ## Status
 
 This is still a proof of concept, expect bugs.
