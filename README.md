@@ -24,46 +24,43 @@ This repo has github [discussions](https://github.com/cristianvasquez/obsidian-l
 
 ## Status
 
-This is still a proof of concept, expect bugs.
+This is still a proof of concept, please send any feedback :)
 
 ## Quick start
 
-1. Install the plugin. (Maybe you already did)
+1.  Install the plugin. (Maybe you already did)
 
-2. Write a script somewhere (or copy one of the [examples](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples) )
+2.  Write a script somewhere
 
 ```python
-class Plugin:
-    def __init__(self, *args, **kwargs):        
-        super()
-
-    def execute(self, args):
-        return {
-            'contents': f'Hello world!'
-        }
+def hello():
+    return {
+        'contents': f'Hello world!'
+    }
 ```
 
-3. Run a [flask application](https://github.com/cristianvasquez/obsidian-lab-py), that exposes the script.
+3.  Run a flask application (or similar) to expose it. [gist example](https://gist.github.com/cristianvasquez/6b8a13d6452b7600a64b4e554939e052).
+
+I've also made also a minimal [server](https://github.com/cristianvasquez/obsidian-lab-py) to expose [example scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples). 
 
 ![Server](./docs/server.png)
 
-4. Activate the script in the settings tab / restart
+4.  Activate the script in the settings tab / restart
 
 ![Options](./docs/configure.png)
 
-5. Use it!
+5.  Use it!
 
 ![Use it](./docs/use.png)
-
 
 ## Interaction
 
 Currently there are four ways of interaction implemented:
 
-1. Insert text.
-2. Replace text.
-3. Show elements in a panel.
-4. A chat or command line.
+1.  Insert text.
+2.  Replace text.
+3.  Show elements in a panel.
+4.  A chat or command line.
 
 ![Example widget](./docs/chat.png)
 
@@ -172,7 +169,7 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 ## Apr 22: Add icons
 
--   [X] Choose icons for the services.
+-   [x] Choose icons for the services.
 
 # Contributing
 
