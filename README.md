@@ -126,57 +126,6 @@ is built like all the other plugins,
 
 This will build the main file; that Obsidian should detect. Activate the plugin from inside Obsidian, in community plugins
 
-# Developer log
-
-## Mar 28: POC, Get similar notes to the current one.
-
--   [x] Proof of concept
--   [x] Run commands directly
--   [x] Python example.
--   [x] Javascript example.
-
-## Apr 1: Multiple experiments
-
--   [x] Multiple experiments
--   [x] Text panel
--   [x] Result list panel
--   [x] Experiment commands
-
-## Apr 5: HTTP Calls
-
--   [x] HTTP calls
--   [x] Python plugin system
--   [x] Add text handler
--   [x] Readme
-
-## Apr 6: Command line
-
--   [x] Parametrized python server
-
-## Apr 7: Split into two
-
--   [x] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
-
-## Apr 8: Settings
-
--   [x] Add settings
-
-## Apr 9: Application state
-
--   [x] Refactor
-
-## Apr 12: Review before publishing
-
--   [x] Refactor
-
-## Apr 21: Add chat view
-
--   [x] Add chat and command view.
-
-## Apr 22: Add icons
-
--   [X] Choose icons for the services.
-
 # Contributing
 
 Pull requests are both welcome and appreciated.
