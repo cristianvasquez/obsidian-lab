@@ -1,7 +1,6 @@
 # Obsidian Python lab plugin
 
-
-The Obsidian Python lab is just a collection of dumb interfaces, to enable python developers to use/test functionality within obsidian. 
+The Obsidian Python lab is just a collection of dumb interfaces to enable python developers to use/test functionality within Obsidian. 
 
 ## Motivation
 
@@ -12,16 +11,15 @@ Say you have a terrific script to:
 -   Write the summary of a note.
 -   ....
 
-And you want to quicky see if it's helpful in Obsidian, just using some python.
+And you want to see if it's helpful in Obsidian, just using some python.
 
 That is the purpose of this plugin!. 
 
-There is a server [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that exposes and executes the scripts. This 
-plugin is the part that shows results in obsidian. 
+There is a server [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that exposes and executes the scripts. This plugin is the part that shows results in Obsidian. 
 
 ## Why this plugin? Why not program all in Javascript?
 
-Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript. This is especially true when using Natural Language Processing libraries
+Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript; This is especially true when using Natural Language Processing libraries.
 
 ## Forum
 
@@ -31,7 +29,7 @@ This repo has github [discussions](https://github.com/cristianvasquez/obsidian-l
 
 This is still a proof of concept, expect bugs.
 
-## Quick start
+## Quickstart
 
 1. Install the plugin. (Maybe you already did)
 
@@ -63,7 +61,7 @@ class Plugin:
 
 ## Interaction
 
-Currently there are four ways of interaction implemented:
+Currently, there are four ways of interaction implemented:
 
 1. Insert text.
 2. Replace text.
@@ -85,7 +83,7 @@ Currently there are four ways of interaction implemented:
 }
 ```
 
-And gets a JSON response
+And gets a JSON response.
 
 > Response
 
@@ -108,7 +106,7 @@ And gets a JSON response
 
 ## Config
 
-Configuring the plugin currently is done via the settings, and can only works when the server is up. Here you specify the service's names and how it interacts with the user. Any change in the options will persist in the plugin configuration. 
+Currently, configuring the plugin is done via the settings and can only work when the server is up. Here you specify the service's names and how it interacts with the user. Any change in the options will persist in the plugin configuration. 
 
 ## Build
 
@@ -155,7 +153,7 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 -   [x] Parametrized python server
 
-## Apr 7: Split in two
+## Apr 7: Split into two
 
 -   [x] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
 
@@ -181,6 +179,6 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 # Contributing
 
-Perhaps someone else wants to do write a similar one using javascript, rust, or other language? :D
+Pull requests are both welcome and appreciated.
 
-Pull requests are both, welcome and appreciated
+> I love coffee, you can send me one here: <https://www.buymeacoffee.com/pelado> :D
