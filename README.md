@@ -1,5 +1,9 @@
 # Obsidian Python lab plugin
 
+The Obsidian Python lab is just a collection of dumb interfaces to enable python developers to use/test functionality within Obsidian.
+
+## Motivation
+
 Say you have a terrific script to:
 
 -   Find similar notes to the current one.
