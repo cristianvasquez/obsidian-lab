@@ -63,18 +63,6 @@ It then returns a JSON response, which the plugin uses to show something in a Wi
 }
 ```
 
-## Example python server
-
-I wrote a minimal server,  [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes some scripts. It might be useful to look at. I use something different each time, like this [example](https://gist.github.com/cristianvasquez/6b8a13d6452b7600a64b4e554939e052).
-
-## Forum
-
-This repo has github [discussions](https://github.com/cristianvasquez/obsidian-lab/discussions) enabled.
-
-## Status
-
-This is still a proof of concept; please send any feedback :)
-
 ## Quickstart
 
 1.  Install the plugin. (Maybe you already did)
@@ -100,9 +88,13 @@ def hello():
 
 ![Example widget](./docs/chat.png)
 
-## Build
+## Example python server
 
-is built like all the other plugins,
+I wrote a minimal server,  [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes some scripts. It might be useful to look at. I use something different each time, like this [example](https://gist.github.com/cristianvasquez/6b8a13d6452b7600a64b4e554939e052).
+
+## Build the plugin
+
+This is not necessary if the plugin is installed from the store. However, it is built like all the other plugins,
 
 1.  Clone this repo into
 
@@ -117,6 +109,14 @@ is built like all the other plugins,
     yarn build
 
 This will build the main file; that Obsidian should detect. Activate the plugin from inside Obsidian, in community plugins
+
+## Forum
+
+This repo has github [discussions](https://github.com/cristianvasquez/obsidian-lab/discussions) enabled.
+
+## Status
+
+This is still a proof of concept; please send any feedback :)
 
 # Contributing
 
