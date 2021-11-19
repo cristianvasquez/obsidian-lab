@@ -7,68 +7,35 @@ Say you have a terrific script to:
 -   Write the summary of a note.
 -   ....
 
-And you want to quicky see if it's helpful in Obsidian, just using some python.
+And you want to quickly see if it's helpful in Obsidian, just using some python.
 
 That is the purpose of this plugin!. 
 
-There is a server [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py) that exposes and executes the scripts. This 
-plugin is the part that shows results in obsidian. 
-
 ## Why this plugin? Why not program all in Javascript?
 
-Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript. This is especially true when using Natural Language Processing libraries
-
-## Forum
-
-This repo has github [discussions](https://github.com/cristianvasquez/obsidian-lab/discussions) enabled.
-
-## Status
-
-This is still a proof of concept, please send any feedback :)
-
-## Quick start
-
-1.  Install the plugin. (Maybe you already did)
-
-2.  Write a script somewhere
-
-```python
-def hello():
-    return {
-        'contents': f'Hello world!'
-    }
-```
-
-3.  Run a flask application (or similar) to expose it. [gist example](https://gist.github.com/cristianvasquez/6b8a13d6452b7600a64b4e554939e052).
-
-I've also made also a minimal [server](https://github.com/cristianvasquez/obsidian-lab-py) to expose [example scripts](https://github.com/cristianvasquez/obsidian-lab-py/tree/main/examples). 
-
-![Server](./docs/server.png)
-
-4.  Activate the script in the settings tab / restart
-
-![Options](./docs/configure.png)
-
-5.  Use it!
-
-![Use it](./docs/use.png)
-
-## Interaction
-
-Currently there are four ways of interaction implemented:
-
-1.  Insert text.
-2.  Replace text.
-3.  Show elements in a panel.
-4.  A chat or command line.
-
-![Example widget](./docs/chat.png)
+Sometimes is quicker to experiment in Python and later, if you want, make it work in Javascript. This is especially true when using Natural Language Processing libraries.
 
 ## How it works?
 
-1.  The plugin makes a call using POST.
+The plugin is just a GUI to make calls to a server of your choice. Currently, the plugin has implemented the following
+ operations:
+
+1.  Insert new text.
+2.  Replace the current text.
+3.  Show elements in a panel.
+4.  Have a chat conversation
+
+![Use it](./docs/use.png)
+
+## Plugin-Server interaction
+
+1. When the user runs one of the plugin's commands, for example, 'replacing fancy text,' the plugin makes a POST call to your server with some context data, such as the current note, what was selected, etc. 
+
+Say your terrific script returns a list of random notes of your vault. Then the plugin does:
 
 > POST: <http://127.0.0.1:5000/scripts/some_list>
+
+With some context data
 
 ```json
 {
@@ -77,7 +44,7 @@ Currently there are four ways of interaction implemented:
 }
 ```
 
-And gets a JSON response
+It then returns a JSON response, which the plugin uses to show something in a Widget
 
 > Response
 
@@ -96,11 +63,42 @@ And gets a JSON response
 }
 ```
 
-2.  An obsidian widget is populated with the JSON response.
+## Example python server
 
-## Config
+I wrote a minimal server,  [obsidian-lab-py](https://github.com/cristianvasquez/obsidian-lab-py), that exposes some scripts. It might be useful to look at. I use something different each time, like this [example](https://gist.github.com/cristianvasquez/6b8a13d6452b7600a64b4e554939e052).
 
-Configuring the plugin currently is done via the settings, and can only works when the server is up. Here you specify the service's names and how it interacts with the user. Any change in the options will persist in the plugin configuration. 
+## Forum
+
+This repo has github [discussions](https://github.com/cristianvasquez/obsidian-lab/discussions) enabled.
+
+## Status
+
+This is still a proof of concept; please send any feedback :)
+
+## Quickstart
+
+1.  Install the plugin. (Maybe you already did)
+
+2.  Write a script somewhere
+
+```python
+def hello():
+    return {
+        'contents': f'Hello world!'
+    }
+```
+
+3.  Run the application to expose the script. 
+
+![Server](./docs/server.png)
+
+4.  The script should be now be detected by the plugin. Then the operation needs to be configured to specify how it interacts with the user. Any change in the options will persist in the plugin configuration. 
+
+![Options](./docs/configure.png)
+
+5.  Use it!
+
+![Example widget](./docs/chat.png)
 
 ## Build
 
@@ -122,19 +120,39 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 
 # Developer log
 
-## Mar 28: POC, Get similar notes to the current one.
+# 2021
 
--   [x] Proof of concept
--   [x] Run commands directly
--   [x] Python example.
--   [x] Javascript example.
+## Nov 19: Fix chat bug.
 
-## Apr 1: Multiple experiments
+-   [x] Fix chat bug.
 
--   [x] Multiple experiments
--   [x] Text panel
--   [x] Result list panel
--   [x] Experiment commands
+## Apr 22: Add icons
+
+-   [x] Choose icons for the services.
+
+## Apr 21: Add chat view
+
+-   [x] Add chat and command view.
+
+## Apr 12: Review before publishing
+
+-   [x] Refactor
+
+## Apr 9: Application state
+
+-   [x] Refactor
+
+## Apr 8: Settings
+
+-   [x] Add settings
+
+## Apr 7: Split in two
+
+-   [x] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
+
+## Apr 6: Command line
+
+-   [x] Parametrized python server
 
 ## Apr 5: HTTP Calls
 
@@ -143,36 +161,20 @@ This will build the main file; that Obsidian should detect. Activate the plugin 
 -   [x] Add text handler
 -   [x] Readme
 
-## Apr 6: Command line
+## Apr 1: Multiple experiments
 
--   [x] Parametrized python server
+-   [x] Multiple experiments
+-   [x] Text panel
+-   [x] Result list panel
+-   [x] Experiment commands
 
-## Apr 7: Split in two
+## Mar 28: POC, Get similar notes to the current one.
 
--   [x] Splitted into plugin and [server](https://github.com/cristianvasquez/obsidian-lab-py) repos
-
-## Apr 8: Settings
-
--   [x] Add settings
-
-## Apr 9: Application state
-
--   [x] Refactor
-
-## Apr 12: Review before publishing
-
--   [x] Refactor
-
-## Apr 21: Add chat view
-
--   [x] Add chat and command view.
-
-## Apr 22: Add icons
-
--   [x] Choose icons for the services.
+-   [x] Proof of concept
+-   [x] Run commands directly
+-   [x] Python example.
+-   [x] Javascript example.
 
 # Contributing
 
-Perhaps someone else wants to do write a similar one using javascript, rust, or other language? :D
-
-Pull requests are both, welcome and appreciated
+Pull requests are both welcome and appreciated.

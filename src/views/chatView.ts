@@ -28,12 +28,7 @@ export default class ChatView extends LabView {
 
   // The use input
   getLastInput(): string {
-    return 'hello';
-  }
-
-  // The service reponse
-  setLastResponse(data: any) {
-    console.log('Arrived', data);
+    return this.lastInput;
   }
 
   sendMessage(): void {
