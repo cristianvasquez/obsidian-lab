@@ -1,6 +1,6 @@
 {
   "name": "python-lab-plugin",
-  "version": "0.2.3",
+  "version": "0.2.6",
   "description": "Python lab plugin",
   "main": "main.js",
   "scripts": {
